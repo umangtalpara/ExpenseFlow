@@ -127,6 +127,7 @@ exports.User = User = __decorate([
     (0, mongoose_1.Schema)({
         timestamps: true,
         collection: 'users',
+        isTenantScoped: true,
     })
 ], User);
 exports.UserSchema = mongoose_1.SchemaFactory.createForClass(User);

@@ -9,21 +9,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TenantModule = void 0;
 const common_1 = require("@nestjs/common");
 const tenant_service_1 = require("./tenant.service");
-const tenant_interceptor_1 = require("./tenant.interceptor");
-const core_1 = require("@nestjs/core");
+const tenant_middleware_1 = require("./tenant.middleware");
+const jwt_1 = require("@nestjs/jwt");
 let TenantModule = class TenantModule {
+    configure(consumer) {
+        consumer.apply(tenant_middleware_1.TenantMiddleware).forRoutes('*');
+    }
 };
 exports.TenantModule = TenantModule;
 exports.TenantModule = TenantModule = __decorate([
     (0, common_1.Global)(),
     (0, common_1.Module)({
-        providers: [
-            tenant_service_1.TenantService,
-            {
-                provide: core_1.APP_INTERCEPTOR,
-                useClass: tenant_interceptor_1.TenantInterceptor,
-            },
-        ],
+        imports: [jwt_1.JwtModule.register({})],
+        providers: [tenant_service_1.TenantService, tenant_middleware_1.TenantMiddleware],
         exports: [tenant_service_1.TenantService],
     })
 ], TenantModule);

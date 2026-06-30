@@ -13,6 +13,10 @@ export class TenantService {
     return this.als.run({ tenantId }, callback);
   }
 
+  enterTenant(tenantId: string): void {
+    this.als.enterWith({ tenantId });
+  }
+
   getTenantId(): string | null {
     const store = this.als.getStore();
     return store ? store.tenantId : null;

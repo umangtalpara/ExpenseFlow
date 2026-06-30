@@ -1,17 +1,16 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { TenantService } from './tenant.service';
-import { TenantInterceptor } from './tenant.interceptor';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { TenantMiddleware } from './tenant.middleware';
+import { JwtModule } from '@nestjs/jwt';
 
 @Global()
 @Module({
-  providers: [
-    TenantService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: TenantInterceptor,
-    },
-  ],
+  imports: [JwtModule.register({})],
+  providers: [TenantService, TenantMiddleware],
   exports: [TenantService],
 })
-export class TenantModule {}
+export class TenantModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantMiddleware).forRoutes('*');
+  }
+}

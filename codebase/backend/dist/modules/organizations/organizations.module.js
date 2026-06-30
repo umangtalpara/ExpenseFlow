@@ -10,6 +10,8 @@ exports.OrganizationsModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const organization_schema_1 = require("./schemas/organization.schema");
+const organizations_service_1 = require("./organizations.service");
+const organizations_controller_1 = require("./organizations.controller");
 let OrganizationsModule = class OrganizationsModule {
 };
 exports.OrganizationsModule = OrganizationsModule;
@@ -18,7 +20,9 @@ exports.OrganizationsModule = OrganizationsModule = __decorate([
         imports: [
             mongoose_1.MongooseModule.forFeature([{ name: organization_schema_1.Organization.name, schema: organization_schema_1.OrganizationSchema }]),
         ],
-        exports: [mongoose_1.MongooseModule],
+        providers: [organizations_service_1.OrganizationsService],
+        controllers: [organizations_controller_1.OrganizationsController],
+        exports: [mongoose_1.MongooseModule, organizations_service_1.OrganizationsService],
     })
 ], OrganizationsModule);
 //# sourceMappingURL=organizations.module.js.map

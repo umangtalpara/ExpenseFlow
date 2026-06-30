@@ -25,10 +25,9 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                     uri: configService.get('MONGODB_URI'),
                     connectionFactory: (connection) => {
                         connection.plugin((schema) => {
-                            if (schema.get('bypassTenantPlugin')) {
-                                return;
+                            if (schema.get('isTenantScoped') === true) {
+                                (0, tenant_plugin_1.tenantPlugin)(schema, { tenantService });
                             }
-                            (0, tenant_plugin_1.tenantPlugin)(schema, { tenantService });
                         });
                         return connection;
                     },

@@ -158,6 +158,52 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
     }
+    async invite(dto, currentUser) {
+        const existingUser = await this.userModel
+            .findOne({ email: dto.email.toLowerCase() })
+            .setOptions({ bypassTenantFilter: true });
+        if (existingUser) {
+            throw new common_1.ConflictException('User with this email is already registered');
+        }
+        const inviteToken = Math.random().toString(36).substring(2, 15) +
+            Math.random().toString(36).substring(2, 15);
+        const invited = new this.userModel({
+            name: dto.name,
+            email: dto.email.toLowerCase(),
+            passwordHash: 'pending_invite_activation',
+            role: dto.role,
+            status: user_schema_1.UserStatus.PENDING_INVITE,
+            organization: currentUser.organizationId,
+            emailVerificationToken: inviteToken,
+            isEmailVerified: false,
+        });
+        await invited.save();
+        const inviteLink = `http://localhost:3000/invite/accept?token=${inviteToken}`;
+        return {
+            message: 'Invitation successfully created',
+            inviteToken,
+            inviteLink,
+        };
+    }
+    async acceptInvite(dto) {
+        const user = await this.userModel
+            .findOne({ emailVerificationToken: dto.token })
+            .setOptions({ bypassTenantFilter: true });
+        if (!user || user.status !== user_schema_1.UserStatus.PENDING_INVITE) {
+            throw new common_1.UnauthorizedException('Invalid or expired invitation token');
+        }
+        const salt = await bcrypt.genSalt(12);
+        const passwordHash = await bcrypt.hash(dto.password, salt);
+        user.passwordHash = passwordHash;
+        user.status = user_schema_1.UserStatus.ACTIVE;
+        user.emailVerificationToken = undefined;
+        user.isEmailVerified = true;
+        await user.save();
+        return {
+            message: 'Invitation accepted and account activated successfully',
+            email: user.email,
+        };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([

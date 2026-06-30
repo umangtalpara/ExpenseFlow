@@ -33,6 +33,7 @@ exports.Designation = Designation = __decorate([
     (0, mongoose_1.Schema)({
         timestamps: true,
         collection: 'designations',
+        isTenantScoped: true,
     })
 ], Designation);
 exports.DesignationSchema = mongoose_1.SchemaFactory.createForClass(Designation);

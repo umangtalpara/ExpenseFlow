@@ -33,6 +33,7 @@ exports.Department = Department = __decorate([
     (0, mongoose_1.Schema)({
         timestamps: true,
         collection: 'departments',
+        isTenantScoped: true,
     })
 ], Department);
 exports.DepartmentSchema = mongoose_1.SchemaFactory.createForClass(Department);

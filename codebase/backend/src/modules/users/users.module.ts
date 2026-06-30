@@ -3,6 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schemas/user.schema';
 import { Department, DepartmentSchema } from './schemas/department.schema';
 import { Designation, DesignationSchema } from './schemas/designation.schema';
+import { DepartmentsService } from './departments.service';
+import { DepartmentsController } from './departments.controller';
+import { DesignationsService } from './designations.service';
+import { DesignationsController } from './designations.controller';
 
 @Module({
   imports: [
@@ -12,6 +16,8 @@ import { Designation, DesignationSchema } from './schemas/designation.schema';
       { name: Designation.name, schema: DesignationSchema },
     ]),
   ],
-  exports: [MongooseModule],
+  providers: [DepartmentsService, DesignationsService],
+  controllers: [DepartmentsController, DesignationsController],
+  exports: [MongooseModule, DepartmentsService, DesignationsService],
 })
 export class UsersModule {}

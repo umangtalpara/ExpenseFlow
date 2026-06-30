@@ -12,6 +12,10 @@ const mongoose_1 = require("@nestjs/mongoose");
 const user_schema_1 = require("./schemas/user.schema");
 const department_schema_1 = require("./schemas/department.schema");
 const designation_schema_1 = require("./schemas/designation.schema");
+const departments_service_1 = require("./departments.service");
+const departments_controller_1 = require("./departments.controller");
+const designations_service_1 = require("./designations.service");
+const designations_controller_1 = require("./designations.controller");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
@@ -24,7 +28,9 @@ exports.UsersModule = UsersModule = __decorate([
                 { name: designation_schema_1.Designation.name, schema: designation_schema_1.DesignationSchema },
             ]),
         ],
-        exports: [mongoose_1.MongooseModule],
+        providers: [departments_service_1.DepartmentsService, designations_service_1.DesignationsService],
+        controllers: [departments_controller_1.DepartmentsController, designations_controller_1.DesignationsController],
+        exports: [mongoose_1.MongooseModule, departments_service_1.DepartmentsService, designations_service_1.DesignationsService],
     })
 ], UsersModule);
 //# sourceMappingURL=users.module.js.map

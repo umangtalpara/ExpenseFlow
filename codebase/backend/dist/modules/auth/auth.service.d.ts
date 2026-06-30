@@ -4,6 +4,8 @@ import { OrganizationDocument } from '../organizations/schemas/organization.sche
 import { UserDocument, UserRole } from '../users/schemas/user.schema';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { InviteUserDto } from './dto/invite.dto';
+import { AcceptInviteDto } from './dto/accept-invite.dto';
 export declare class AuthService {
     private readonly orgModel;
     private readonly userModel;
@@ -27,5 +29,14 @@ export declare class AuthService {
     }>;
     refresh(token: string): Promise<{
         accessToken: string;
+    }>;
+    invite(dto: InviteUserDto, currentUser: any): Promise<{
+        message: string;
+        inviteToken: string;
+        inviteLink: string;
+    }>;
+    acceptInvite(dto: AcceptInviteDto): Promise<{
+        message: string;
+        email: string;
     }>;
 }
