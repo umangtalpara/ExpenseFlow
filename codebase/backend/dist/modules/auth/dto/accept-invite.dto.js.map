@@ -1,1 +1,0 @@
-{"version":3,"file":"accept-invite.dto.js","sourceRoot":"","sources":["../../../../src/modules/auth/dto/accept-invite.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,qDAAkE;AAElE,MAAa,eAAe;IAG1B,KAAK,CAAS;IAKd,QAAQ,CAAS;CAClB;AATD,0CASC;AANC;IAFC,IAAA,0BAAQ,GAAE;IACV,IAAA,4BAAU,GAAE;;8CACC;AAKd;IAHC,IAAA,0BAAQ,GAAE;IACV,IAAA,4BAAU,GAAE;IACZ,IAAA,2BAAS,EAAC,CAAC,CAAC;;iDACI"}
