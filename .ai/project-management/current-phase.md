@@ -8,11 +8,11 @@
 
 | Field | Value |
 |-------|-------|
-| **Phase** | PHASE-01 |
-| **Name** | Foundation & Authentication |
+| **Phase** | PHASE-02 |
+| **Name** | User Hierarchy & Org Settings |
 | **Status** | IN_PROGRESS |
-| **Started At** | 2026-06-30 20:20 |
-| **Estimated Completion** | 2026-07-02 |
+| **Started At** | 2026-06-30 20:44 |
+| **Estimated Completion** | 2026-07-03 |
 
 ---
 
@@ -22,29 +22,30 @@
 
 | Task ID | Title | Agent | Priority | Status | Retries |
 |---------|-------|-------|----------|--------|---------|
-| PHASE-01-TASK-001 | Project Scaffolding | backend-agent | P0 | IN_PROGRESS | 0/3 |
-| PHASE-01-TASK-002 | Tenant Context & Mongoose Multi-Tenancy | backend-agent | P0 | PENDING | 0/3 |
-| PHASE-01-TASK-003 | Backend Authentication & Authorization | backend-agent | P0 | PENDING | 0/3 |
+| PHASE-02-TASK-001 | Org Settings Profile API | backend-agent | P0 | IN_PROGRESS | 0/3 |
+| PHASE-02-TASK-002 | Departments & Designations CRUD API | backend-agent | P0 | PENDING | 0/3 |
+| PHASE-02-TASK-003 | User Hierarchy & Invite Management | backend-agent | P0 | PENDING | 0/3 |
 
 ### Frontend Tasks
 
 | Task ID | Title | Agent | Priority | Status | Retries |
 |---------|-------|-------|----------|--------|---------|
-| PHASE-01-TASK-004 | Frontend Authentication UI & Integration | frontend-agent | P0 | PENDING | 0/3 |
+| PHASE-02-TASK-004 | Org Settings & User Management Frontend Views | frontend-agent | P0 | PENDING | 0/3 |
 
 ## Execution Order
 
-1. ⬜ Backend Agent → PHASE-01-TASK-001, PHASE-01-TASK-002, PHASE-01-TASK-003
-2. ⬜ Frontend Agent → PHASE-01-TASK-004
+1. ⬜ Backend Agent → PHASE-02-TASK-001, PHASE-02-TASK-002, PHASE-02-TASK-003
+2. ⬜ Frontend Agent → PHASE-02-TASK-004
 3. ⬜ QA Agent → (Verification and validation)
 
 ## Phase Completion Criteria
 
-- [ ] All backend tasks completed (scaffolding, multi-tenancy, auth API)
-- [ ] All frontend tasks completed (scaffolding, auth views, auth store)
-- [ ] Local environment successfully running with Docker Compose (Mongo & Redis)
-- [ ] Initial tests pass for authentication modules
+- [ ] Implement organization profile retrieval and settings update endpoints
+- [ ] Implement department and designation CRUD REST APIs
+- [ ] Implement paginated user directory listings and employee invitation workflows
+- [ ] Build responsive user directory page, department manager, and settings forms in Next.js
+- [ ] Pass integration and unit tests for organization settings, departments, and designations
 
 ---
 
-*Last updated: 2026-06-30 — Phase 1 started*
+*Last updated: 2026-06-30 — Phase 1 completed, Phase 2 started*
