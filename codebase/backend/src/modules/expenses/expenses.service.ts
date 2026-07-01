@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { ExpenseRepository } from './repositories/expense.repository';
 import { CategoryRepository } from '../categories/repositories/category.repository';
 import { PaymentMethodRepository } from '../payment-methods/repositories/payment-method.repository';
@@ -7,6 +7,7 @@ import { OrganizationRepository } from '../organizations/repositories/organizati
 import { BudgetRepository } from '../budgets/repositories/budget.repository';
 import { BudgetsService } from '../budgets/budgets.service';
 import { CurrencyExchangeAdapter } from './adapters/currency-exchange.adapter';
+import { ApprovalsService } from '../approvals/approvals.service';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expense.dto';
 import { ExpenseStatus, Expense } from './schemas/expense.schema';
 import { CategoryStatus } from '../categories/schemas/category.schema';
@@ -26,6 +27,8 @@ export class ExpensesService {
     private readonly budgetRepository: BudgetRepository,
     private readonly budgetsService: BudgetsService,
     private readonly exchangeAdapter: CurrencyExchangeAdapter,
+    @Inject(forwardRef(() => ApprovalsService))
+    private readonly approvalsService: ApprovalsService,
   ) {}
 
   async create(userId: string, dto: CreateExpenseDto) {
@@ -89,9 +92,12 @@ export class ExpensesService {
       organization: tenantId as any,
     });
 
-    // 5. If status is submitted, update project budget spent dynamically
-    if (expense.status === ExpenseStatus.SUBMITTED && dto.project) {
-      await this.triggerBudgetUpdate(dto.project, convertedAmount);
+    // 5. If status is submitted, update project budget spent dynamically and submit to approval workflow
+    if (expense.status === ExpenseStatus.SUBMITTED) {
+      if (dto.project) {
+        await this.triggerBudgetUpdate(dto.project, convertedAmount);
+      }
+      await this.approvalsService.submitToWorkflow(expense._id.toString());
     }
 
     return expense;
@@ -196,13 +202,12 @@ export class ExpensesService {
 
     const updated = await this.expenseRepository.update(id, updateData);
 
-    // If transitioned to submitted, trigger budget update
-    if (
-      expense.status === ExpenseStatus.DRAFT &&
-      updated!.status === ExpenseStatus.SUBMITTED &&
-      updated!.project
-    ) {
-      await this.triggerBudgetUpdate(updated!.project.toString(), updated!.convertedAmount);
+    // If transitioned to submitted, trigger budget update and submit to approval workflow
+    if (expense.status === ExpenseStatus.DRAFT && updated!.status === ExpenseStatus.SUBMITTED) {
+      if (updated!.project) {
+        await this.triggerBudgetUpdate(updated!.project.toString(), updated!.convertedAmount);
+      }
+      await this.approvalsService.submitToWorkflow(updated!._id.toString());
     }
 
     return updated;

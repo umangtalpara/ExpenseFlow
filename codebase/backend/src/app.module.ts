@@ -23,6 +23,7 @@ import { BudgetsModule } from './modules/budgets/budgets.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
+import { ApprovalsModule } from './modules/approvals/approvals.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
     CategoriesModule,
     PaymentMethodsModule,
     ExpensesModule,
+    ApprovalsModule,
   ],
   controllers: [AppController],
   providers: [

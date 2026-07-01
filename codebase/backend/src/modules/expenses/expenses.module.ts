@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Expense, ExpenseSchema } from './schemas/expense.schema';
 import { ExpenseRepository } from './repositories/expense.repository';
@@ -10,6 +10,7 @@ import { PaymentMethodsModule } from '../payment-methods/payment-methods.module'
 import { ProjectsModule } from '../projects/projects.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { BudgetsModule } from '../budgets/budgets.module';
+import { ApprovalsModule } from '../approvals/approvals.module';
 
 import { StorageService } from './services/storage.service';
 
@@ -23,6 +24,7 @@ import { StorageService } from './services/storage.service';
     ProjectsModule,
     OrganizationsModule,
     BudgetsModule,
+    forwardRef(() => ApprovalsModule),
   ],
   providers: [ExpenseRepository, CurrencyExchangeAdapter, ExpensesService, StorageService],
   controllers: [ExpensesController],
