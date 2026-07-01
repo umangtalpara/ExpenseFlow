@@ -1,12 +1,30 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, HttpCode, HttpStatus, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, HttpCode, HttpStatus, ForbiddenException, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
+import { StorageService } from './services/storage.service';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expense.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('expenses')
 @UseGuards(JwtAuthGuard)
 export class ExpensesController {
-  constructor(private readonly expensesService: ExpensesService) {}
+  constructor(
+    private readonly expensesService: ExpensesService,
+    private readonly storageService: StorageService,
+  ) {}
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(@UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    const url = await this.storageService.uploadFile(file);
+    return {
+      filename: file.originalname,
+      url,
+    };
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

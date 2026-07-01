@@ -11,6 +11,8 @@ import { ProjectsModule } from '../projects/projects.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { BudgetsModule } from '../budgets/budgets.module';
 
+import { StorageService } from './services/storage.service';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -22,8 +24,8 @@ import { BudgetsModule } from '../budgets/budgets.module';
     OrganizationsModule,
     BudgetsModule,
   ],
-  providers: [ExpenseRepository, CurrencyExchangeAdapter, ExpensesService],
+  providers: [ExpenseRepository, CurrencyExchangeAdapter, ExpensesService, StorageService],
   controllers: [ExpensesController],
-  exports: [ExpenseRepository, ExpensesService],
+  exports: [ExpenseRepository, ExpensesService, StorageService],
 })
 export class ExpensesModule {}

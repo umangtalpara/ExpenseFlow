@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsEnum, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsEnum, Matches, IsBoolean, IsNumber, Min } from 'class-validator';
 import { CategoryStatus } from '../schemas/category.schema';
 
 export class CreateCategoryDto {
@@ -18,6 +18,15 @@ export class CreateCategoryDto {
   @IsEnum(CategoryStatus)
   @IsOptional()
   status?: CategoryStatus;
+
+  @IsBoolean()
+  @IsOptional()
+  requireReceipt?: boolean;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  maxLimit?: number;
 }
 
 export class UpdateCategoryDto {
@@ -37,4 +46,13 @@ export class UpdateCategoryDto {
   @IsEnum(CategoryStatus)
   @IsOptional()
   status?: CategoryStatus;
+
+  @IsBoolean()
+  @IsOptional()
+  requireReceipt?: boolean;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  maxLimit?: number;
 }

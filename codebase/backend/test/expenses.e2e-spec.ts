@@ -233,5 +233,86 @@ describe('Expenses Submission & Normalization (E2E)', () => {
       expect(alerts[0].threshold).toBe(80);
       expect(alerts[0].percentage).toBe(82);
     });
+
+    it('should enforce Category maxLimit and requireReceipt validation rules', async () => {
+      // 1. Create a category with limit 100 USD and requireReceipt: true
+      const catRes = await request(app.getHttpServer())
+        .post('/categories')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({
+          name: 'Limited Receipts Cat',
+          code: 'LTD_RC',
+          description: 'Testing limit and receipt requirement rules',
+          requireReceipt: true,
+          maxLimit: 100,
+        })
+        .expect(HttpStatus.CREATED);
+
+      const strictCatId = catRes.body._id;
+
+      // 2. Submit expense exceeding limit -> expect 400
+      await request(app.getHttpServer())
+        .post('/expenses')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({
+          amount: 150,
+          currency: 'USD',
+          date: '2026-06-01',
+          category: strictCatId,
+          paymentMethod: createdPaymentMethodId,
+          merchant: 'Expensive Vendor',
+          status: ExpenseStatus.SUBMITTED,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+
+      // 3. Submit expense without receiptUrl -> expect 400
+      await request(app.getHttpServer())
+        .post('/expenses')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({
+          amount: 50,
+          currency: 'USD',
+          date: '2026-06-01',
+          category: strictCatId,
+          paymentMethod: createdPaymentMethodId,
+          merchant: 'Merchant X',
+          status: ExpenseStatus.SUBMITTED,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+    });
+
+    it('should upload a receipt file and save expense capturing GST and Vendor fields', async () => {
+      // 1. Upload mock file
+      const uploadRes = await request(app.getHttpServer())
+        .post('/expenses/upload')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .attach('file', Buffer.from('mock pdf invoice content'), 'invoice.pdf')
+        .expect(HttpStatus.CREATED);
+
+      expect(uploadRes.body).toHaveProperty('url');
+      const receiptUrl = uploadRes.body.url;
+
+      // 2. Create expense claim with upload URL, GST, and Vendor name
+      const expenseRes = await request(app.getHttpServer())
+        .post('/expenses')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .send({
+          amount: 80,
+          currency: 'USD',
+          date: '2026-06-01',
+          category: createdCategoryId,
+          paymentMethod: createdPaymentMethodId,
+          merchant: 'Target Store',
+          gst: 8,
+          vendor: 'Target US Corp',
+          receiptUrl,
+          status: ExpenseStatus.SUBMITTED,
+        })
+        .expect(HttpStatus.CREATED);
+
+      expect(expenseRes.body.gst).toBe(8);
+      expect(expenseRes.body.vendor).toBe('Target US Corp');
+      expect(expenseRes.body.receiptUrl).toBe(receiptUrl);
+    });
   });
 });

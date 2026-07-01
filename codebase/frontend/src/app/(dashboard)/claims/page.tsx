@@ -3,7 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { FilePlus, FileText, Trash2, CheckCircle, RefreshCw, X, Receipt, Upload, Check, DollarSign } from 'lucide-react';
+import { FilePlus, FileText, Trash2, RefreshCw, X, Receipt, Upload, Check, ChevronRight, ChevronLeft, AlertTriangle } from 'lucide-react';
+
+interface CategoryOption {
+  _id: string;
+  name: string;
+  code: string;
+  requireReceipt: boolean;
+  maxLimit?: number;
+}
 
 interface DropdownOption {
   _id: string;
@@ -18,10 +26,12 @@ interface ExpenseClaimItem {
   convertedAmount: number;
   exchangeRate: number;
   date: string;
-  category: DropdownOption;
+  category: CategoryOption;
   paymentMethod: DropdownOption & { type: string };
   project?: DropdownOption;
   merchant: string;
+  gst?: number;
+  vendor?: string;
   description?: string;
   receiptUrl?: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed';
@@ -30,7 +40,7 @@ interface ExpenseClaimItem {
 export default function ClaimsPage() {
   const { user: currentUser } = useAuthStore();
   const [claims, setClaims] = useState<ExpenseClaimItem[]>([]);
-  const [categories, setCategories] = useState<DropdownOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<DropdownOption[]>([]);
   const [projects, setProjects] = useState<DropdownOption[]>([]);
 
@@ -38,8 +48,12 @@ export default function ClaimsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Modals
+  // Modals & Stepper
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // Steps: 1 (Basics), 2 (Linkages), 3 (Receipt)
+
+  // Drag and Drop
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Form State
   const [createForm, setCreateForm] = useState({
@@ -50,9 +64,11 @@ export default function ClaimsPage() {
     paymentMethod: '',
     project: '',
     merchant: '',
+    gst: 0,
+    vendor: '',
     description: '',
     receiptFile: null as File | null,
-    receiptMockUrl: '',
+    receiptUrl: '',
   });
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
@@ -87,8 +103,23 @@ export default function ClaimsPage() {
     setError('');
     setSuccess('');
 
+    // Pre-submit validation for Category Rules
+    const selectedCategory = categories.find((c) => c._id === createForm.category);
+    if (selectedCategory) {
+      if (status === 'submitted' && selectedCategory.requireReceipt && !createForm.receiptUrl) {
+        setError(`A receipt upload is mandatory for category "${selectedCategory.name}"`);
+        setCreateSubmitting(false);
+        return;
+      }
+      if (selectedCategory.maxLimit && createForm.amount > selectedCategory.maxLimit && createForm.currency === 'USD') {
+        setError(`This expense exceeds the category limit of $${selectedCategory.maxLimit}`);
+        setCreateSubmitting(false);
+        return;
+      }
+    }
+
     try {
-      const response = await api.post('/expenses', {
+      await api.post('/expenses', {
         amount: Number(createForm.amount),
         currency: createForm.currency,
         date: new Date(createForm.date).toISOString(),
@@ -96,25 +127,16 @@ export default function ClaimsPage() {
         paymentMethod: createForm.paymentMethod,
         project: createForm.project || undefined,
         merchant: createForm.merchant,
+        gst: createForm.gst ? Number(createForm.gst) : undefined,
+        vendor: createForm.vendor || undefined,
         description: createForm.description || undefined,
-        receiptUrl: createForm.receiptMockUrl || undefined,
+        receiptUrl: createForm.receiptUrl || undefined,
         status,
       });
 
       setSuccess(status === 'submitted' ? 'Claim submitted successfully' : 'Claim saved as draft');
       setCreateModalOpen(false);
-      setCreateForm({
-        amount: 0,
-        currency: 'USD',
-        date: new Date().toISOString().split('T')[0],
-        category: '',
-        paymentMethod: '',
-        project: '',
-        merchant: '',
-        description: '',
-        receiptFile: null,
-        receiptMockUrl: '',
-      });
+      resetForm();
       loadData();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create expense claim');
@@ -123,14 +145,66 @@ export default function ClaimsPage() {
     }
   };
 
-  const handleMockUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+  const resetForm = () => {
+    setCreateForm({
+      amount: 0,
+      currency: 'USD',
+      date: new Date().toISOString().split('T')[0],
+      category: '',
+      paymentMethod: '',
+      project: '',
+      merchant: '',
+      gst: 0,
+      vendor: '',
+      description: '',
+      receiptFile: null,
+      receiptUrl: '',
+    });
+    setCurrentStep(1);
+  };
+
+  // Multipart File Upload Endpoint calling
+  const handleFileUpload = async (file: File) => {
+    setError('');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await api.post('/expenses/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       setCreateForm((prev) => ({
         ...prev,
         receiptFile: file,
-        receiptMockUrl: `/receipts/mock-upload-${Date.now()}-${file.name}`,
+        receiptUrl: res.data.url,
       }));
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to upload receipt file');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      await handleFileUpload(e.target.files[0]);
     }
   };
 
@@ -159,6 +233,8 @@ export default function ClaimsPage() {
     }
   };
 
+  const selectedCategoryObj = categories.find((c) => c._id === createForm.category);
+
   // Stats
   const draftCount = claims.filter((c) => c.status === 'draft').length;
   const pendingCount = claims.filter((c) => c.status === 'submitted').length;
@@ -184,7 +260,7 @@ export default function ClaimsPage() {
             <RefreshCw className="h-4 w-4" />
           </button>
           <button
-            onClick={() => setCreateModalOpen(true)}
+            onClick={() => { resetForm(); setCreateModalOpen(true); }}
             className="flex items-center px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-all duration-200 shadow-lg shadow-cyan-500/25 text-sm"
           >
             <FilePlus className="mr-2 h-4 w-4" />
@@ -239,7 +315,7 @@ export default function ClaimsPage() {
         {loading ? (
           <div className="p-12 text-center text-slate-500">Loading claims list...</div>
         ) : claims.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">No expense claims filed yet. Click File Claim to create one.</div>
+          <div className="p-12 text-center text-slate-500 font-semibold">No expense claims filed yet. Click File Claim to create one.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs text-slate-300">
@@ -247,6 +323,8 @@ export default function ClaimsPage() {
                 <tr className="border-b border-white/5 bg-white/5 text-slate-400 uppercase tracking-wider text-[10px] font-bold">
                   <th className="p-4">Date</th>
                   <th className="p-4">Merchant</th>
+                  <th className="p-4">Vendor</th>
+                  <th className="p-4">GST</th>
                   <th className="p-4">Category</th>
                   <th className="p-4">Project</th>
                   <th className="p-4">Payment Method</th>
@@ -262,6 +340,8 @@ export default function ClaimsPage() {
                   <tr key={claim._id} className="hover:bg-white/5 transition-colors">
                     <td className="p-4 font-mono">{new Date(claim.date).toLocaleDateString()}</td>
                     <td className="p-4 font-semibold text-white">{claim.merchant}</td>
+                    <td className="p-4">{claim.vendor || <span className="text-slate-600">N/A</span>}</td>
+                    <td className="p-4 font-mono">{claim.gst ? `$${claim.gst}` : <span className="text-slate-600">N/A</span>}</td>
                     <td className="p-4">
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium font-mono uppercase">
                         {claim.category?.name || 'N/A'}
@@ -287,8 +367,9 @@ export default function ClaimsPage() {
                     <td className="p-4">
                       {claim.receiptUrl ? (
                         <a
-                          href="#"
-                          onClick={(e) => { e.preventDefault(); alert(`Mock previewing receipt file: ${claim.receiptUrl}`); }}
+                          href={claim.receiptUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center text-cyan-400 hover:text-cyan-300 underline gap-1"
                         >
                           <Receipt className="h-3 w-3" />
@@ -338,180 +419,298 @@ export default function ClaimsPage() {
         )}
       </div>
 
-      {/* Claim Creation Modal */}
+      {/* Claim Creation Stepper Modal */}
       {createModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setCreateModalOpen(false)} />
           <div className="relative w-full max-w-lg rounded-xl border border-white/5 bg-[#0b0f19] p-6 shadow-2xl space-y-4">
+            
+            {/* Header */}
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white">File Expense Claim</h3>
+              <div>
+                <h3 className="text-lg font-bold text-white">File Expense Claim</h3>
+                <span className="text-xs text-slate-400">Step {currentStep} of 3</span>
+              </div>
               <button onClick={() => setCreateModalOpen(false)} className="text-slate-500 hover:text-slate-300">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Merchant Name</label>
-                  <input
-                    type="text"
-                    value={createForm.merchant}
-                    onChange={(e) => setCreateForm({ ...createForm, merchant: e.target.value })}
-                    placeholder="Uber Ride"
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
-                    required
-                  />
-                </div>
+            {/* Stepper Progress Bar */}
+            <div className="flex items-center gap-2">
+              <div className={`h-1.5 flex-1 rounded-full ${currentStep >= 1 ? 'bg-cyan-500' : 'bg-white/5'}`} />
+              <div className={`h-1.5 flex-1 rounded-full ${currentStep >= 2 ? 'bg-cyan-500' : 'bg-white/5'}`} />
+              <div className={`h-1.5 flex-1 rounded-full ${currentStep >= 3 ? 'bg-cyan-500' : 'bg-white/5'}`} />
+            </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Date of Expense</label>
-                  <input
-                    type="date"
-                    value={createForm.date}
-                    onChange={(e) => setCreateForm({ ...createForm, date: e.target.value })}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Expense Amount</label>
-                  <input
-                    type="number"
-                    value={createForm.amount}
-                    onChange={(e) => setCreateForm({ ...createForm, amount: Number(e.target.value) })}
-                    placeholder="120.00"
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Currency</label>
-                  <select
-                    value={createForm.currency}
-                    onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="INR">INR (₹)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Expense Category</label>
-                  <select
-                    value={createForm.category}
-                    onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
-                    required
-                  >
-                    <option value="">Select Category...</option>
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Payment Method</label>
-                  <select
-                    value={createForm.paymentMethod}
-                    onChange={(e) => setCreateForm({ ...createForm, paymentMethod: e.target.value })}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
-                    required
-                  >
-                    <option value="">Select Method...</option>
-                    {paymentMethods.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Link Project (Optional)</label>
-                <select
-                  value={createForm.project}
-                  onChange={(e) => setCreateForm({ ...createForm, project: e.target.value })}
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
-                >
-                  <option value="">No Project Linkage</option>
-                  {projects.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name} ({p.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Description / Business Purpose</label>
-                <textarea
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                  placeholder="Client dinner meeting with NASA delegates"
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
-                  rows={2}
-                />
-              </div>
-
-              {/* Receipt File upload */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Receipt Attachment</label>
-                <div className="mt-2 border border-dashed border-white/10 hover:border-white/20 rounded-lg p-4 bg-white/5 flex flex-col items-center justify-center cursor-pointer relative">
-                  <input
-                    type="file"
-                    onChange={handleMockUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  {createForm.receiptFile ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-300 font-semibold">
-                      <Check className="h-4 w-4 text-emerald-400" />
-                      <span>{createForm.receiptFile.name} (Attached)</span>
+            <form className="space-y-4 pt-2">
+              
+              {/* STEP 1: Basic Expense Info */}
+              {currentStep === 1 && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-200">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Merchant</label>
+                      <input
+                        type="text"
+                        value={createForm.merchant}
+                        onChange={(e) => setCreateForm({ ...createForm, merchant: e.target.value })}
+                        placeholder="Uber Ride"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                        required
+                      />
                     </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Date</label>
+                      <input
+                        type="date"
+                        value={createForm.date}
+                        onChange={(e) => setCreateForm({ ...createForm, date: e.target.value })}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Amount</label>
+                      <input
+                        type="number"
+                        value={createForm.amount}
+                        onChange={(e) => setCreateForm({ ...createForm, amount: Number(e.target.value) })}
+                        placeholder="120.00"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Currency</label>
+                      <select
+                        value={createForm.currency}
+                        onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="INR">INR (₹)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Vendor (Optional)</label>
+                      <input
+                        type="text"
+                        value={createForm.vendor}
+                        onChange={(e) => setCreateForm({ ...createForm, vendor: e.target.value })}
+                        placeholder="Uber Technologies Inc"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">GST (Optional)</label>
+                      <input
+                        type="number"
+                        value={createForm.gst}
+                        onChange={(e) => setCreateForm({ ...createForm, gst: Number(e.target.value) })}
+                        placeholder="12.00"
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: Classification */}
+              {currentStep === 2 && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-200">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Category</label>
+                      <select
+                        value={createForm.category}
+                        onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                        required
+                      >
+                        <option value="">Select Category...</option>
+                        {categories.map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name} {c.maxLimit ? `(Limit: $${c.maxLimit})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Payment Method</label>
+                      <select
+                        value={createForm.paymentMethod}
+                        onChange={(e) => setCreateForm({ ...createForm, paymentMethod: e.target.value })}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                        required
+                      >
+                        <option value="">Select Method...</option>
+                        {paymentMethods.map((p) => (
+                          <option key={p._id} value={p._id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Link Project (Optional)</label>
+                    <select
+                      value={createForm.project}
+                      onChange={(e) => setCreateForm({ ...createForm, project: e.target.value })}
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                    >
+                      <option value="">No Project Linkage</option>
+                      {projects.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name} ({p.code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Description</label>
+                    <textarea
+                      value={createForm.description}
+                      onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                      placeholder="Business purpose of this expense..."
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                      rows={3}
+                    />
+                  </div>
+
+                  {selectedCategoryObj && (selectedCategoryObj.requireReceipt || selectedCategoryObj.maxLimit) && (
+                    <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs flex gap-2 items-start">
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-semibold block">Category Rules:</span>
+                        {selectedCategoryObj.requireReceipt && <span className="block">• Receipt attachment is MANDATORY for submission.</span>}
+                        {selectedCategoryObj.maxLimit && <span className="block">• Limit: Expenses cannot exceed ${selectedCategoryObj.maxLimit}.</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 3: Receipt Attachment & Drag & Drop */}
+              {currentStep === 3 && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-200">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Receipt Attachment</label>
+                  
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`mt-2 border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer relative transition-all duration-200 ${
+                      isDragOver
+                        ? 'border-cyan-500 bg-cyan-500/5'
+                        : createForm.receiptFile
+                        ? 'border-emerald-500/40 bg-emerald-500/5'
+                        : 'border-white/10 hover:border-white/20 bg-white/5'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    
+                    {createForm.receiptFile ? (
+                      <div className="flex flex-col items-center gap-2 text-xs text-slate-300 font-semibold">
+                        <Check className="h-6 w-6 text-emerald-400" />
+                        <span>{createForm.receiptFile.name} (Successfully Uploaded)</span>
+                        <span className="text-[10px] text-slate-500 font-mono select-all mt-1">{createForm.receiptUrl}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-slate-500 mb-2" />
+                        <span className="text-xs text-slate-400 font-semibold">Drag and drop file here, or click to upload</span>
+                        <span className="text-[10px] text-slate-500 block mt-0.5">Supports PDF, PNG, JPG</span>
+                      </>
+                    )}
+                  </div>
+
+                  {selectedCategoryObj?.requireReceipt && !createForm.receiptUrl && (
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex gap-2 items-center">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <span>Submission requires a receipt attachment for this category.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Navigation Actions */}
+              <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                <div>
+                  {currentStep > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep((prev) => prev - 1)}
+                      className="flex items-center px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
+                    >
+                      <ChevronLeft className="mr-1.5 h-4 w-4" />
+                      Back
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCreateModalOpen(false)}
+                    className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  
+                  {currentStep < 3 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Validate basic inputs before moving forward
+                        if (currentStep === 1 && (!createForm.merchant || !createForm.amount)) {
+                          setError('Merchant name and Amount are required');
+                          return;
+                        }
+                        setError('');
+                        setCurrentStep((prev) => prev + 1);
+                      }}
+                      className="flex items-center px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-semibold transition-colors"
+                    >
+                      Next
+                      <ChevronRight className="ml-1.5 h-4 w-4" />
+                    </button>
                   ) : (
                     <>
-                      <Upload className="h-6 w-6 text-slate-500 mb-1" />
-                      <span className="text-xs text-slate-400 font-semibold">Click to upload invoice / receipt</span>
-                      <span className="text-[10px] text-slate-500 block mt-0.5">Supports PDF, PNG, JPG</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCreateSubmit(e, 'draft')}
+                        disabled={createSubmitting}
+                        className="px-4 py-2 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/5 text-cyan-400 text-sm font-semibold transition-colors"
+                      >
+                        Save Draft
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCreateSubmit(e, 'submitted')}
+                        disabled={createSubmitting || (selectedCategoryObj?.requireReceipt && !createForm.receiptUrl)}
+                        className={`px-5 py-2 rounded-lg font-semibold transition-colors text-sm ${
+                          selectedCategoryObj?.requireReceipt && !createForm.receiptUrl
+                            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                            : 'bg-cyan-500 hover:bg-cyan-600 text-slate-950'
+                        }`}
+                      >
+                        {createSubmitting ? 'Submitting...' : 'Submit Claim'}
+                      </button>
                     </>
                   )}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => handleCreateSubmit(e, 'draft')}
-                  disabled={createSubmitting}
-                  className="px-4 py-2 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/5 text-cyan-400 text-sm font-semibold transition-colors"
-                >
-                  Save Draft
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => handleCreateSubmit(e, 'submitted')}
-                  disabled={createSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
-                >
-                  {createSubmitting ? 'Submitting...' : 'Submit Claim'}
-                </button>
-              </div>
             </form>
           </div>
         </div>

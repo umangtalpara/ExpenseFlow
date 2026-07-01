@@ -48,6 +48,12 @@ export class Expense {
   @Prop({ trim: true })
   description?: string;
 
+  @Prop({ type: Number })
+  gst?: number;
+
+  @Prop({ trim: true })
+  vendor?: string;
+
   @Prop({ trim: true })
   receiptUrl?: string;
 

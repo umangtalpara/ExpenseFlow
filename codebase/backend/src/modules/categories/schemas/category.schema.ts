@@ -23,6 +23,12 @@ export class Category {
   @Prop({ type: String, enum: CategoryStatus, default: CategoryStatus.ACTIVE })
   status: CategoryStatus;
 
+  @Prop({ type: Boolean, default: false })
+  requireReceipt: boolean;
+
+  @Prop({ type: Number })
+  maxLimit?: number;
+
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Organization', required: true, index: true })
   organization: Types.ObjectId | Organization;
 }

@@ -39,6 +39,15 @@ export class CreateExpenseDto {
   @IsOptional()
   receiptUrl?: string;
 
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  gst?: number;
+
+  @IsString()
+  @IsOptional()
+  vendor?: string;
+
   @IsEnum(ExpenseStatus)
   @IsOptional()
   status?: ExpenseStatus;
@@ -81,6 +90,15 @@ export class UpdateExpenseDto {
   @IsString()
   @IsOptional()
   receiptUrl?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  gst?: number;
+
+  @IsString()
+  @IsOptional()
+  vendor?: string;
 
   @IsEnum(ExpenseStatus)
   @IsOptional()

@@ -60,6 +60,23 @@ export class ExpensesService {
       orgCurrency
     );
 
+    // Validate Category limit (maxLimit) in base currency
+    if (category.maxLimit !== undefined && category.maxLimit !== null) {
+      if (convertedAmount > category.maxLimit) {
+        throw new BadRequestException(
+          `Expense amount exceeds the category maximum limit of ${category.maxLimit} ${orgCurrency}`
+        );
+      }
+    }
+
+    // Validate Category receipt requirement
+    const status = dto.status || ExpenseStatus.DRAFT;
+    if (status === ExpenseStatus.SUBMITTED && category.requireReceipt) {
+      if (!dto.receiptUrl) {
+        throw new BadRequestException('Receipt attachment is required for this category');
+      }
+    }
+
     const expense = await this.expenseRepository.create({
       ...dto,
       exchangeRate,
@@ -120,11 +137,13 @@ export class ExpensesService {
     }
 
     // Verify metadata if updated
+    let category = await this.categoryRepository.findById(expense.category.toString());
     if (dto.category) {
       const cat = await this.categoryRepository.findById(dto.category);
       if (!cat || cat.status !== CategoryStatus.ACTIVE) {
         throw new BadRequestException('Invalid or inactive category');
       }
+      category = cat;
     }
     if (dto.paymentMethod) {
       const pm = await this.paymentMethodRepository.findById(dto.paymentMethod);
@@ -150,6 +169,29 @@ export class ExpensesService {
       );
       updateData.exchangeRate = exchangeRate;
       updateData.convertedAmount = convertedAmount;
+    }
+
+    const finalConvertedAmount = updateData.convertedAmount ?? expense.convertedAmount;
+    const finalStatus = updateData.status ?? expense.status;
+    const finalReceiptUrl = updateData.receiptUrl ?? expense.receiptUrl;
+
+    const org = await this.organizationRepository.findById(expense.organization.toString());
+    const orgCurrency = org?.currency || 'USD';
+
+    // Limit check
+    if (category && category.maxLimit !== undefined && category.maxLimit !== null) {
+      if (finalConvertedAmount > category.maxLimit) {
+        throw new BadRequestException(
+          `Expense amount exceeds the category maximum limit of ${category.maxLimit} ${orgCurrency}`
+        );
+      }
+    }
+
+    // Receipt check
+    if (finalStatus === ExpenseStatus.SUBMITTED && category && category.requireReceipt) {
+      if (!finalReceiptUrl) {
+        throw new BadRequestException('Receipt attachment is required for this category');
+      }
     }
 
     const updated = await this.expenseRepository.update(id, updateData);
