@@ -20,6 +20,9 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { BullModule } from '@nestjs/bullmq';
 import { BudgetsModule } from './modules/budgets/budgets.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
+import { ExpensesModule } from './modules/expenses/expenses.module';
 
 @Module({
   imports: [
@@ -67,6 +70,9 @@ import { BudgetsModule } from './modules/budgets/budgets.module';
     ProjectsModule,
     VendorsModule,
     BudgetsModule,
+    CategoriesModule,
+    PaymentMethodsModule,
+    ExpensesModule,
   ],
   controllers: [AppController],
   providers: [

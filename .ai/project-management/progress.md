@@ -7,13 +7,13 @@
 ## Overall Progress
 
 ```
-Total:     [██████████░░░░░░░░░░] 50% (15/30 tasks)
+Total:     [████████████░░░░░░░░] 60% (18/30 tasks)
 Phase 1:   [████████████████████] 100% (3/3 tasks)
 Phase 2:   [████████████████████] 100% (3/3 tasks)
 Phase 3:   [████████████████████] 100% (3/3 tasks)
 Phase 4:   [████████████████████] 100% (3/3 tasks)
 Phase 5:   [████████████████████] 100% (3/3 tasks)
-Phase 6:   Not started
+Phase 6:   [████████████████████] 100% (3/3 tasks)
 Phase 7:   Not started
 Phase 8:   Not started
 Phase 9:   Not started
@@ -24,11 +24,11 @@ Phase 10:  Not started
 
 | Agent | Assigned | Completed | In Progress | Failed | Blocked |
 |-------|----------|-----------|-------------|--------|---------|
-| Backend Agent | 18 | 11 | 0 | 0 | 0 |
-| Frontend Agent | 11 | 4 | 0 | 0 | 0 |
+| Backend Agent | 18 | 13 | 0 | 0 | 0 |
+| Frontend Agent | 11 | 5 | 0 | 0 | 0 |
 | QA Agent | 1 | 0 | 0 | 0 | 0 |
 | Code Review Agent | 0 | 0 | 0 | 0 | 0 |
-| **Total** | **30** | **15** | **0** | **0** | **0** |
+| **Total** | **30** | **18** | **0** | **0** | **0** |
 
 ## Task Status Legend
 
@@ -87,9 +87,9 @@ Phase 10:  Not started
 
 | # | Task ID | Title | Agent | Priority | Status | Retries |
 |---|---------|-------|-------|----------|--------|---------|
-| 16 | PHASE-06-TASK-001 | Dynamic Categories & Payment Methods CRUD API | backend-agent | P0 | ⬜ | 0/3 |
-| 17 | PHASE-06-TASK-002 | Expense Claim Submission & Receipt Upload API | backend-agent | P0 | ⬜ | 0/3 |
-| 18 | PHASE-06-TASK-003 | Expense Claim Wizard & Receipt Uploader UI | frontend-agent | P0 | ⬜ | 0/3 |
+| 16 | PHASE-06-TASK-001 | Dynamic Categories & Payment Methods CRUD API | backend-agent | P0 | ✅ | 0/3 |
+| 17 | PHASE-06-TASK-002 | Expense Claim Submission & Receipt Upload API | backend-agent | P0 | ✅ | 0/3 |
+| 18 | PHASE-06-TASK-003 | Expense Claim Wizard & Receipt Uploader UI | frontend-agent | P0 | ✅ | 0/3 |
 
 ### Phase 7: Dynamic Approval Workflows Engine
 

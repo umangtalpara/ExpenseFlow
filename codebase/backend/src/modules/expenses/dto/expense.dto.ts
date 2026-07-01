@@ -1,0 +1,88 @@
+import { IsNotEmpty, IsNumber, IsString, IsOptional, IsDateString, IsEnum, Min } from 'class-validator';
+import { ExpenseStatus } from '../schemas/expense.schema';
+
+export class CreateExpenseDto {
+  @IsNumber()
+  @Min(0)
+  @IsNotEmpty()
+  amount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  currency: string;
+
+  @IsDateString()
+  @IsNotEmpty()
+  date: string;
+
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @IsString()
+  @IsNotEmpty()
+  paymentMethod: string;
+
+  @IsString()
+  @IsOptional()
+  project?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  merchant: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  receiptUrl?: string;
+
+  @IsEnum(ExpenseStatus)
+  @IsOptional()
+  status?: ExpenseStatus;
+}
+
+export class UpdateExpenseDto {
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  amount?: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsDateString()
+  @IsOptional()
+  date?: string;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
+
+  @IsString()
+  @IsOptional()
+  project?: string;
+
+  @IsString()
+  @IsOptional()
+  merchant?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  receiptUrl?: string;
+
+  @IsEnum(ExpenseStatus)
+  @IsOptional()
+  status?: ExpenseStatus;
+}
