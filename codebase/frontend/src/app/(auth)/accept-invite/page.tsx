@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/store/auth.store';
 import axios from 'axios';
 
-export default function AcceptInvitePage() {
+function AcceptInviteFormContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuth } = useAuthStore();
@@ -184,5 +184,13 @@ export default function AcceptInvitePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AcceptInvitePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0f1d] flex items-center justify-center text-white">Loading...</div>}>
+      <AcceptInviteFormContent />
+    </Suspense>
   );
 }

@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
             Reset Password
           </h2>
           <p className="mt-2 text-center text-sm text-slate-400">
-            Enter your email address and we'll generate a token for you.
+            Enter your email address and we will generate a token for you.
           </p>
         </div>
 

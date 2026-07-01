@@ -14,6 +14,8 @@ import { RolesModule } from './modules/roles/roles.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
+import { DepartmentsModule } from './modules/departments/departments.module';
+import { DesignationsModule } from './modules/designations/designations.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
     UsersModule,
     AuthModule,
     InvitationsModule,
+    DepartmentsModule,
+    DesignationsModule,
   ],
   controllers: [AppController],
   providers: [

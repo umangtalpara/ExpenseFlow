@@ -38,6 +38,10 @@ export class UserRepository {
     return query.exec();
   }
 
+  async count(filter: Record<string, any> = {}, options: Record<string, any> = {}): Promise<number> {
+    return this.model.countDocuments(filter).setOptions(options).exec();
+  }
+
   async update(id: string, data: Partial<User>, options: Record<string, any> = {}): Promise<UserDocument | null> {
     return this.model.findByIdAndUpdate(id, data, { new: true }).setOptions(options).exec();
   }

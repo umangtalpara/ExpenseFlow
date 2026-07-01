@@ -25,6 +25,15 @@ export class Organization {
 
   @Prop({ default: 'UTC', trim: true })
   timezone: string;
+
+  @Prop({ trim: true })
+  website?: string;
+
+  @Prop({ trim: true })
+  address?: string;
+
+  @Prop({ trim: true })
+  logo?: string;
 }
 
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);
