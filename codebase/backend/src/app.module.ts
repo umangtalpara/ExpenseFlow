@@ -18,6 +18,8 @@ import { DepartmentsModule } from './modules/departments/departments.module';
 import { DesignationsModule } from './modules/designations/designations.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
+import { BullModule } from '@nestjs/bullmq';
+import { BudgetsModule } from './modules/budgets/budgets.module';
 
 @Module({
   imports: [
@@ -40,6 +42,20 @@ import { VendorsModule } from './modules/vendors/vendors.module';
         },
       }),
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get<string>('REDIS_URL');
+        const url = new URL(redisUrl);
+        const connection: any = {
+          host: url.hostname,
+          port: parseInt(url.port, 10) || 6379,
+        };
+        if (url.password) connection.password = url.password;
+        if (url.username) connection.username = url.username;
+        return { connection };
+      },
+    }),
     OrganizationsModule,
     PermissionsModule,
     RolesModule,
@@ -50,6 +66,7 @@ import { VendorsModule } from './modules/vendors/vendors.module';
     DesignationsModule,
     ProjectsModule,
     VendorsModule,
+    BudgetsModule,
   ],
   controllers: [AppController],
   providers: [
