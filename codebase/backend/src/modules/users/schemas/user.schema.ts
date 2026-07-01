@@ -51,6 +51,12 @@ export class User {
 
   @Prop({ trim: true })
   profileImage?: string;
+
+  @Prop({ select: false })
+  resetPasswordToken?: string;
+
+  @Prop({ type: Date, select: false })
+  resetPasswordExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

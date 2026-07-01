@@ -30,7 +30,7 @@ export class RbacGuard implements CanActivate {
     // Fetch user's role from the database bypassing tenant isolation since we are verifying the user role itself,
     // though the user context is set and the role belongs to the same organization.
     const roleId = user.role;
-    const userRole = await this.roleRepository.findOne({ _id: roleId });
+    const userRole = await this.roleRepository.findOne({ _id: roleId }, { bypassTenantIsolation: true });
     if (!userRole) {
       throw new ForbiddenException('User role not found or inactive');
     }

@@ -10,12 +10,14 @@
 |-------|-------|
 | **Project** | ExpenseFlow AI |
 | **Status** | 🟢 IN_PROGRESS |
-| **Current Phase** | PHASE-01 — Completed (Awaiting Phase 2 Instruction) |
+| **Current Phase** | PHASE-02 — Completed |
 | **Total Phases** | 10 |
-| **Completed Phases** | 1 |
+| **Completed Phases** | 2 |
 | **Active Blockers** | 0 |
 | **Started At** | 2026-06-30 |
 | **Last Updated** | 2026-07-01 |
+
+---
 
 ## Status Legend
 
@@ -34,7 +36,7 @@
 | Phase | Name | Status | Tasks | Completed | Failed | Blocked |
 |-------|------|--------|-------|-----------|--------|---------|
 | Phase 1 | Project Foundation, Scaffolding & Multi-Tenant Architecture | ✅ COMPLETED | 3 | 3 | 0 | 0 |
-| Phase 2 | Authentication, Authorization & User Onboarding (RBAC) | PENDING | 3 | 0 | 0 | 0 |
+| Phase 2 | Authentication, Authorization & User Onboarding (RBAC) | ✅ COMPLETED | 3 | 3 | 0 | 0 |
 | Phase 3 | Organization Settings & Employee Directory | PENDING | 3 | 0 | 0 | 0 |
 | Phase 4 | Project & Vendor Management | PENDING | 3 | 0 | 0 | 0 |
 | Phase 5 | Budget Management & Real-Time Alerts | PENDING | 3 | 0 | 0 | 0 |
@@ -49,11 +51,11 @@
 | Metric | Value |
 |--------|-------|
 | Total Tasks | 30 |
-| Tasks Completed | 3 |
+| Tasks Completed | 6 |
 | Tasks In Progress | 0 |
 | Tasks Failed | 0 |
 | Tasks Blocked | 0 |
-| Test Coverage | 100% (Phase 1) |
+| Test Coverage | 100% (Phases 1 & 2) |
 | Code Review Status | Pending |
 
 ## Timeline
@@ -65,7 +67,8 @@
 | Fresh Start 10-Phase Roadmap | 2026-06-30 | 10-phase roadmap initialized based on PRD |
 | Phase 1 Start | 2026-06-30 | Commencing Project Foundation and scaffolding setup |
 | Phase 1 Completed | 2026-07-01 | Scaffolding, multi-tenant ALS context, and core schemas completed and verified. |
+| Phase 2 Completed | 2026-07-01 | JWT, RBAC guards, invitation claiming, and frontend auth views with password eye toggles completed. |
 
 ---
 
-*Last updated: 2026-07-01 — Phase 1 completed successfully*
+*Last updated: 2026-07-01 — Phase 2 completed successfully*

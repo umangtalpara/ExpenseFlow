@@ -14,23 +14,23 @@ export class RoleRepository {
     return this.model.create(data);
   }
 
-  async findById(id: string): Promise<RoleDocument | null> {
-    return this.model.findById(id).exec();
+  async findById(id: string, options: Record<string, any> = {}): Promise<RoleDocument | null> {
+    return this.model.findById(id).setOptions(options).exec();
   }
 
-  async findOne(filter: Record<string, any>): Promise<RoleDocument | null> {
-    return this.model.findOne(filter).exec();
+  async findOne(filter: Record<string, any>, options: Record<string, any> = {}): Promise<RoleDocument | null> {
+    return this.model.findOne(filter).setOptions(options).exec();
   }
 
-  async find(filter: Record<string, any> = {}): Promise<RoleDocument[]> {
-    return this.model.find(filter).exec();
+  async find(filter: Record<string, any> = {}, options: Record<string, any> = {}): Promise<RoleDocument[]> {
+    return this.model.find(filter).setOptions(options).exec();
   }
 
-  async update(id: string, data: Partial<Role>): Promise<RoleDocument | null> {
-    return this.model.findByIdAndUpdate(id, data, { new: true }).exec();
+  async update(id: string, data: Partial<Role>, options: Record<string, any> = {}): Promise<RoleDocument | null> {
+    return this.model.findByIdAndUpdate(id, data, { new: true }).setOptions(options).exec();
   }
 
-  async delete(id: string): Promise<RoleDocument | null> {
-    return this.model.findByIdAndDelete(id).exec();
+  async delete(id: string, options: Record<string, any> = {}): Promise<RoleDocument | null> {
+    return this.model.findByIdAndDelete(id).setOptions(options).exec();
   }
 }

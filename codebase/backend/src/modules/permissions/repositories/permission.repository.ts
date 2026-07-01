@@ -14,23 +14,23 @@ export class PermissionRepository {
     return this.model.create(data);
   }
 
-  async findById(id: string): Promise<PermissionDocument | null> {
-    return this.model.findById(id).exec();
+  async findById(id: string, options: Record<string, any> = {}): Promise<PermissionDocument | null> {
+    return this.model.findById(id).setOptions(options).exec();
   }
 
-  async findOne(filter: Record<string, any>): Promise<PermissionDocument | null> {
-    return this.model.findOne(filter).exec();
+  async findOne(filter: Record<string, any>, options: Record<string, any> = {}): Promise<PermissionDocument | null> {
+    return this.model.findOne(filter).setOptions(options).exec();
   }
 
-  async find(filter: Record<string, any> = {}): Promise<PermissionDocument[]> {
-    return this.model.find(filter).exec();
+  async find(filter: Record<string, any> = {}, options: Record<string, any> = {}): Promise<PermissionDocument[]> {
+    return this.model.find(filter).setOptions(options).exec();
   }
 
-  async update(id: string, data: Partial<Permission>): Promise<PermissionDocument | null> {
-    return this.model.findByIdAndUpdate(id, data, { new: true }).exec();
+  async update(id: string, data: Partial<Permission>, options: Record<string, any> = {}): Promise<PermissionDocument | null> {
+    return this.model.findByIdAndUpdate(id, data, { new: true }).setOptions(options).exec();
   }
 
-  async delete(id: string): Promise<PermissionDocument | null> {
-    return this.model.findByIdAndDelete(id).exec();
+  async delete(id: string, options: Record<string, any> = {}): Promise<PermissionDocument | null> {
+    return this.model.findByIdAndDelete(id).setOptions(options).exec();
   }
 }
