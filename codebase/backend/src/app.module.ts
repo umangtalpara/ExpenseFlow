@@ -28,6 +28,8 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { ReimbursementsModule } from './modules/reimbursements/reimbursements.module';
 import { SearchModule } from './modules/search/search.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -54,7 +56,7 @@ import { SearchModule } from './modules/search/search.module';
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const redisUrl = config.get<string>('REDIS_URL');
+        const redisUrl = config.get<string>('REDIS_URL') || 'redis://localhost:6379';
         const url = new URL(redisUrl);
         const connection: any = {
           host: url.hostname,
@@ -83,6 +85,8 @@ import { SearchModule } from './modules/search/search.module';
     AuditLogsModule,
     ReimbursementsModule,
     SearchModule,
+    ReportsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

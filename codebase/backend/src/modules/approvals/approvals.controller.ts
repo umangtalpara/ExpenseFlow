@@ -53,7 +53,7 @@ export class ApprovalsController {
 
   @Get('inbox')
   @HttpCode(HttpStatus.OK)
-  getInbox(@Request() req) {
+  getInbox(@Request() req: any) {
     return this.approvalsService.getInbox(req.user.id, req.user.role);
   }
 
@@ -61,7 +61,7 @@ export class ApprovalsController {
   @HttpCode(HttpStatus.OK)
   takeAction(
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: any,
     @Body() dto: ApprovalActionDto
   ) {
     return this.approvalsService.takeAction(id, req.user.id, req.user.role, dto);

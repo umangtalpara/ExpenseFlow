@@ -55,7 +55,7 @@ export class ExpensesService {
     }
 
     // 4. Resolve exchange rate and converted amount
-    const org = await this.organizationRepository.findById(tenantId);
+    const org = await this.organizationRepository.findById(tenantId!);
     const orgCurrency = org?.currency || 'USD';
     const { exchangeRate, convertedAmount } = this.exchangeAdapter.convert(
       dto.amount,

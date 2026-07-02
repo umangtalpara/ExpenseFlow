@@ -19,6 +19,7 @@ import {
   User as UserIcon,
   Banknote,
   History,
+  BarChart3,
 } from 'lucide-react';
 
 const navigation = [
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Budgets', href: '/budgets', icon: BadgeCent },
   { name: 'Claims', href: '/claims', icon: FileText },
   { name: 'Reimbursements', href: '/reimbursements', icon: Banknote },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Audit Logs', href: '/audit-logs', icon: History },
   { name: 'Org Settings', href: '/settings/organization', icon: Settings },
 ];
@@ -44,6 +46,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (item.name === 'Audit Logs' || item.name === 'Reimbursements') {
       const isOrgAdmin = user?.role === 'Organization Admin' || user?.role?.includes('Admin');
       return isOrgAdmin;
+    }
+    if (item.name === 'Reports') {
+      const isOrgAdmin = user?.role === 'Organization Admin' || user?.role?.includes('Admin');
+      const isPM = user?.role === 'Project Manager';
+      return isOrgAdmin || isPM;
     }
     return true;
   });

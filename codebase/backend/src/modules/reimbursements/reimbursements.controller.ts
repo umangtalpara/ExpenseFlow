@@ -15,7 +15,7 @@ export class ReimbursementsController {
   @UseGuards(RbacGuard)
   @RequiredPermissions('reimbursements:manage')
   @HttpCode(HttpStatus.CREATED)
-  generateBatch(@Request() req, @Body() dto: CreateReimbursementDto) {
+  generateBatch(@Request() req: any, @Body() dto: CreateReimbursementDto) {
     return this.reimbursementsService.generateBatch(req.user.id, dto);
   }
 
@@ -37,7 +37,7 @@ export class ReimbursementsController {
   @HttpCode(HttpStatus.OK)
   payBatch(
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: any,
     @Body() dto: PayReimbursementDto,
   ) {
     return this.reimbursementsService.payBatch(id, req.user.id, dto);

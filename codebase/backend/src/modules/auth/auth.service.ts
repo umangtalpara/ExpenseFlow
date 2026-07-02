@@ -55,7 +55,7 @@ export class AuthService {
     const orgId = org._id.toString();
 
     // 2. Seed Global Permissions
-    const permissionDocs = [];
+    const permissionDocs: any[] = [];
     for (const perm of DEFAULT_PERMISSIONS) {
       let doc = await this.permissionRepository.findOne({ name: perm.name });
       if (!doc) {
@@ -231,11 +231,11 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload, {
       secret,
       expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRY') || '15m',
-    });
+    } as any);
     const refreshToken = this.jwtService.sign(payload, {
       secret,
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRY') || '7d',
-    });
+    } as any);
     return { accessToken, refreshToken };
   }
 }

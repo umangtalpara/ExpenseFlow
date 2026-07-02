@@ -28,14 +28,14 @@ export class ExpensesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Request() req, @Body() createExpenseDto: CreateExpenseDto) {
+  create(@Request() req: any, @Body() createExpenseDto: CreateExpenseDto) {
     return this.expensesService.create(req.user.id, createExpenseDto);
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   findAll(
-    @Request() req,
+    @Request() req: any,
     @Query('projectId') projectId?: string,
     @Query('status') status?: string
   ) {
@@ -52,7 +52,7 @@ export class ExpensesController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async findOne(@Request() req, @Param('id') id: string) {
+  async findOne(@Request() req: any, @Param('id') id: string) {
     const expense = await this.expensesService.findOne(id);
     const userRole = req.user.role || '';
     const isAdmin =
@@ -61,7 +61,7 @@ export class ExpensesController {
       userRole.includes('Admin') ||
       userRole === 'Auditor';
 
-    if (expense.employee._id.toString() !== req.user.id && !isAdmin) {
+    if ((expense.employee as any)._id.toString() !== req.user.id && !isAdmin) {
       throw new ForbiddenException('You do not have permission to view this claim');
     }
     return expense;
@@ -70,7 +70,7 @@ export class ExpensesController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   update(
-    @Request() req,
+    @Request() req: any,
     @Param('id') id: string,
     @Body() updateExpenseDto: UpdateExpenseDto
   ) {
@@ -79,7 +79,7 @@ export class ExpensesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  delete(@Request() req, @Param('id') id: string) {
+  delete(@Request() req: any, @Param('id') id: string) {
     return this.expensesService.delete(id, req.user.id);
   }
 }

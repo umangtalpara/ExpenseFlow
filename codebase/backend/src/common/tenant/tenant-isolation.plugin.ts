@@ -1,4 +1,4 @@
-import { Schema, Query, CallbackWithoutResultAndRequiredError } from 'mongoose';
+import { Schema, Query } from 'mongoose';
 import { getTenantId } from './tenant.context';
 import { BadRequestException } from '@nestjs/common';
 

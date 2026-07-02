@@ -23,16 +23,16 @@ export class ApprovalsService {
   async createWorkflow(dto: CreateApprovalWorkflowDto) {
     const tenantId = getTenantId();
 
-    this.validateSteps(dto.steps);
+    this.validateSteps(dto.steps as any);
 
     if (dto.isDefault) {
-      await this.clearDefaultWorkflows(tenantId);
+      await this.clearDefaultWorkflows(tenantId!);
     }
 
     return this.workflowRepo.create({
       ...dto,
       organization: tenantId as any,
-    });
+    } as any);
   }
 
   async findAllWorkflows() {
@@ -52,14 +52,14 @@ export class ApprovalsService {
     const workflow = await this.findOneWorkflow(id);
 
     if (dto.steps) {
-      this.validateSteps(dto.steps);
+      this.validateSteps(dto.steps as any);
     }
 
     if (dto.isDefault) {
-      await this.clearDefaultWorkflows(tenantId);
+      await this.clearDefaultWorkflows(tenantId!);
     }
 
-    return this.workflowRepo.update(id, dto);
+    return this.workflowRepo.update(id, dto as any);
   }
 
   async deleteWorkflow(id: string) {

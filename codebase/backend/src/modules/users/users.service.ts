@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { UserRepository } from './repositories/user.repository';
-import { RoleRepository } from '../roles/role.repository'; // Wait, let's verify if role.repository is in '../roles/repositories/role.repository'
 import { UpdateUserDto } from './dto/user.dto';
 import { UserStatus } from './schemas/user.schema';
 import { getTenantId } from '../../common/tenant/tenant.context';

@@ -22,7 +22,7 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  logout(@Request() req) {
+  logout(@Request() req: any) {
     return this.authService.logout(req.user);
   }
 
