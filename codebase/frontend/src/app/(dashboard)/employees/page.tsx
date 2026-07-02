@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { Search, UserPlus, SlidersHorizontal, ChevronLeft, ChevronRight, Edit3, Trash2, Check, X, ShieldAlert } from 'lucide-react';
+import { Search, UserPlus, SlidersHorizontal, ChevronLeft, ChevronRight, Edit3, Trash2, Check, X, ShieldAlert, RefreshCw } from 'lucide-react';
 
 interface UserItem {
   _id: string;
@@ -233,6 +233,17 @@ export default function EmployeeDirectoryPage() {
   };
 
   const totalPages = Math.ceil(total / limit);
+
+  if (loading) {
+    return (
+      <div className="flex h-[75vh] items-center justify-center">
+        <div className="flex flex-col items-center space-y-2 text-slate-400">
+          <RefreshCw className="h-8 w-8 animate-spin text-cyan-400" />
+          <span className="text-sm">Retrieving employee records directory...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/store/auth.store';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 function AcceptInviteFormContent() {
   const searchParams = useSearchParams();
@@ -41,7 +42,7 @@ function AcceptInviteFormContent() {
 
   const verifyToken = async (inviteToken: string) => {
     try {
-      const response = await axios.get(`http://localhost:3001/invitations/verify/${inviteToken}`);
+      const response = await axios.get(`${API_BASE_URL}/invitations/verify/${inviteToken}`);
       setInviteDetails(response.data);
     } catch (err: any) {
       console.error(err);
@@ -63,7 +64,7 @@ function AcceptInviteFormContent() {
     }
 
     try {
-      const response = await axios.post('http://localhost:3001/invitations/accept', {
+      const response = await axios.post(`${API_BASE_URL}/invitations/accept`, {
         token,
         name,
         password,

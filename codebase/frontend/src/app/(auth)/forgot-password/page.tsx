@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export default function ForgotPasswordPage() {
     setSuccessMsg(null);
 
     try {
-      const response = await axios.post('http://localhost:3001/auth/forgot-password', {
+      const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, {
         email,
       });
       setSuccessMsg(response.data.message || 'Password reset instructions have been generated. Check console.');

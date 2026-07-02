@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/store/auth.store';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function SignupPage() {
   const { setAuth } = useAuthStore();
@@ -36,7 +37,7 @@ export default function SignupPage() {
     setSuccess(false);
 
     try {
-      const response = await axios.post('http://localhost:3001/auth/signup', {
+      const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
         email,
         name,
         password,

@@ -9,6 +9,8 @@ import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { UserSession, UserSessionSchema } from './schemas/session.schema';
 
 @Module({
   imports: [
@@ -19,6 +21,7 @@ import { AuditLogsModule } from '../audit-logs/audit-logs.module';
     RolesModule,
     PermissionsModule,
     AuditLogsModule,
+    MongooseModule.forFeature([{ name: UserSession.name, schema: UserSessionSchema }]),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

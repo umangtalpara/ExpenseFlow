@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PasswordInput } from '@/components/ui/password-input';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 
 function ResetPasswordFormContent() {
   const searchParams = useSearchParams();
@@ -36,7 +37,7 @@ function ResetPasswordFormContent() {
     }
 
     try {
-      await axios.post('http://localhost:3001/auth/reset-password', {
+      await axios.post(`${API_BASE_URL}/auth/reset-password`, {
         token,
         password,
       });

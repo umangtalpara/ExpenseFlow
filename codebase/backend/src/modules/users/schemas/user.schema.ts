@@ -57,6 +57,12 @@ export class User {
 
   @Prop({ type: Date, select: false })
   resetPasswordExpires?: Date;
+
+  @Prop({ select: false })
+  twoFactorSecret?: string;
+
+  @Prop({ type: Boolean, default: false })
+  isTwoFactorEnabled?: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

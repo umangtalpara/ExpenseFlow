@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { GlobalSearch } from '@/components/global-search';
+import { NotificationsDropdown } from '@/components/notifications-dropdown';
 import {
   LayoutDashboard,
   Users,
@@ -20,6 +21,7 @@ import {
   Banknote,
   History,
   BarChart3,
+  Shield,
 } from 'lucide-react';
 
 const navigation = [
@@ -33,6 +35,7 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Audit Logs', href: '/audit-logs', icon: History },
   { name: 'Org Settings', href: '/settings/organization', icon: Settings },
+  { name: 'Security', href: '/settings/security', icon: Shield },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -145,6 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <GlobalSearch />
           </div>
           <div className="flex items-center space-x-4">
+            <NotificationsDropdown />
             <span className="text-sm text-slate-400 capitalize">
               Role: <span className="text-cyan-400 font-semibold">{user?.role?.replace('Organization ', '')}</span>
             </span>

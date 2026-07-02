@@ -158,6 +158,17 @@ export default function VendorsPage() {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-[75vh] items-center justify-center">
+        <div className="flex flex-col items-center space-y-2 text-slate-400">
+          <RefreshCw className="h-8 w-8 animate-spin text-cyan-400" />
+          <span className="text-sm">Retrieving vendor credentials directory...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Title Header */}
