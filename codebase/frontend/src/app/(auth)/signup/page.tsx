@@ -114,7 +114,7 @@ export default function SignupPage() {
             </label>
             <div className="flex rounded-md shadow-sm">
               <span className="inline-flex items-center rounded-l-md border border-r-0 border-slate-700 bg-slate-800 px-3 text-slate-400 text-sm select-none">
-                http://localhost:3000/
+                https://expense.umanginfo.me/
               </span>
               <input
                 id="org-slug"
@@ -130,7 +130,7 @@ export default function SignupPage() {
 
           <div className="border-t border-slate-800 my-4 pt-4">
             <h3 className="text-sm font-medium text-slate-200 mb-3">Administrator Account Details</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="admin-name" className="block text-sm font-medium text-slate-300 mb-1">
