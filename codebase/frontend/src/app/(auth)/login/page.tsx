@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/store/auth.store';
@@ -9,6 +10,7 @@ import { API_BASE_URL } from '@/lib/api';
 import { Shield, Sparkles } from 'lucide-react';
 
 export default function LoginPage() {
+  const router = useRouter();
   const { setAuth } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,6 +53,7 @@ export default function LoginPage() {
       });
 
       setSuccess(true);
+      router.push('/');
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
@@ -83,6 +86,7 @@ export default function LoginPage() {
       });
 
       setSuccess(true);
+      router.push('/');
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || 'Invalid verification code.');

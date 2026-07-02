@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PasswordInput } from '@/components/ui/password-input';
-import { useAuthStore } from '@/store/auth.store';
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/api';
 
 export default function SignupPage() {
-  const { setAuth } = useAuthStore();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +37,7 @@ export default function SignupPage() {
     setSuccess(false);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
+      await axios.post(`${API_BASE_URL}/auth/signup`, {
         email,
         name,
         password,
@@ -45,18 +45,8 @@ export default function SignupPage() {
         orgSlug,
       });
 
-      const { accessToken, refreshToken } = response.data;
-      const payloadBase64 = accessToken.split('.')[1];
-      const payload = JSON.parse(atob(payloadBase64));
-
-      setAuth(accessToken, refreshToken, {
-        id: payload.sub,
-        email: payload.email,
-        organization: payload.org || '',
-        role: payload.role || '',
-      });
-
       setSuccess(true);
+      setTimeout(() => router.push('/login'), 1500);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.message || 'Organization registration failed. Please try again.');
@@ -110,23 +100,25 @@ export default function SignupPage() {
 
           <div>
             <label htmlFor="org-slug" className="block text-sm font-medium text-slate-300 mb-1">
-              Workspace URL Slug
+              Organization Identifier (Slug)
             </label>
-            <div className="flex rounded-md shadow-sm">
-              <span className="inline-flex items-center rounded-l-md border border-r-0 border-slate-700 bg-slate-800 px-3 text-slate-400 text-sm select-none">
-                https://expense.umanginfo.me/
-              </span>
-              <input
-                id="org-slug"
-                type="text"
-                required
-                value={orgSlug}
-                onChange={(e) => setOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, ''))}
-                className="flex h-10 w-full rounded-r-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                placeholder="provenpeak"
-              />
-            </div>
+            <input
+              id="org-slug"
+              type="text"
+              required
+              value={orgSlug}
+              onChange={(e) => setOrgSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, ''))}
+              className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              placeholder="provenpeak"
+            />
+            <p className="mt-1.5 text-xs text-slate-500">
+              A unique, lowercase identifier for your organization. Auto-generated from your name — only letters, numbers, and hyphens allowed.
+              {orgSlug && (
+                <span className="ml-1 text-cyan-500 font-mono">({orgSlug})</span>
+              )}
+            </p>
           </div>
+
 
           <div className="border-t border-slate-800 my-4 pt-4">
             <h3 className="text-sm font-medium text-slate-200 mb-3">Administrator Account Details</h3>
