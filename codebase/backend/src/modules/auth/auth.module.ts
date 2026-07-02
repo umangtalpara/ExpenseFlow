@@ -8,6 +8,7 @@ import { OrganizationsModule } from '../organizations/organizations.module';
 import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
 import { PermissionsModule } from '../permissions/permissions.module';
+import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PermissionsModule } from '../permissions/permissions.module';
     UsersModule,
     RolesModule,
     PermissionsModule,
+    AuditLogsModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

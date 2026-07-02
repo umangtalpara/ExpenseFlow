@@ -29,7 +29,7 @@ export class ExpensesController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@Request() req, @Body() createExpenseDto: CreateExpenseDto) {
-    return this.expensesService.create(req.user.userId, createExpenseDto);
+    return this.expensesService.create(req.user.id, createExpenseDto);
   }
 
   @Get()
@@ -46,7 +46,7 @@ export class ExpensesController {
       userRole.includes('Admin') ||
       userRole === 'Auditor';
 
-    const employeeId = isAdmin ? undefined : req.user.userId;
+    const employeeId = isAdmin ? undefined : req.user.id;
     return this.expensesService.findAll({ employeeId, projectId, status });
   }
 
@@ -61,7 +61,7 @@ export class ExpensesController {
       userRole.includes('Admin') ||
       userRole === 'Auditor';
 
-    if (expense.employee._id.toString() !== req.user.userId && !isAdmin) {
+    if (expense.employee._id.toString() !== req.user.id && !isAdmin) {
       throw new ForbiddenException('You do not have permission to view this claim');
     }
     return expense;
@@ -74,12 +74,12 @@ export class ExpensesController {
     @Param('id') id: string,
     @Body() updateExpenseDto: UpdateExpenseDto
   ) {
-    return this.expensesService.update(id, req.user.userId, req.user.role, updateExpenseDto);
+    return this.expensesService.update(id, req.user.id, req.user.role, updateExpenseDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   delete(@Request() req, @Param('id') id: string) {
-    return this.expensesService.delete(id, req.user.userId);
+    return this.expensesService.delete(id, req.user.id);
   }
 }

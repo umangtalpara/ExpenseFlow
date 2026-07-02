@@ -68,8 +68,10 @@ describe('Authentication & Authorization (E2E)', () => {
     it('should successfully register a new organization and admin user', async () => {
       const response = await request(app.getHttpServer())
         .post('/auth/signup')
-        .send(signupData)
-        .expect(HttpStatus.CREATED);
+        .send(signupData);
+      
+      console.log('SIGNUP RESPONSE BODY:', response.body);
+      expect(response.status).toBe(HttpStatus.CREATED);
 
       expect(response.body).toHaveProperty('accessToken');
       expect(response.body).toHaveProperty('refreshToken');

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
+import { GlobalSearch } from '@/components/global-search';
 import {
   LayoutDashboard,
   Users,
@@ -16,6 +17,8 @@ import {
   Menu,
   X,
   User as UserIcon,
+  Banknote,
+  History,
 } from 'lucide-react';
 
 const navigation = [
@@ -25,6 +28,8 @@ const navigation = [
   { name: 'Vendors', href: '/vendors', icon: ShieldAlert },
   { name: 'Budgets', href: '/budgets', icon: BadgeCent },
   { name: 'Claims', href: '/claims', icon: FileText },
+  { name: 'Reimbursements', href: '/reimbursements', icon: Banknote },
+  { name: 'Audit Logs', href: '/audit-logs', icon: History },
   { name: 'Org Settings', href: '/settings/organization', icon: Settings },
 ];
 
@@ -34,6 +39,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { isAuthenticated, user, clearAuth } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const visibleNavigation = navigation.filter((item) => {
+    if (item.name === 'Audit Logs' || item.name === 'Reimbursements') {
+      const isOrgAdmin = user?.role === 'Organization Admin' || user?.role?.includes('Admin');
+      return isOrgAdmin;
+    }
+    return true;
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -70,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Navigation Links */}
           <nav className="mt-5 flex-1 px-4 space-y-1">
-            {navigation.map((item) => {
+            {visibleNavigation.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
@@ -119,6 +132,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content Area */}
       <div className="md:pl-64 flex flex-col flex-1 w-full">
+        {/* Desktop Header */}
+        <header className="hidden md:flex items-center justify-between h-16 bg-[#0b0f19]/80 backdrop-blur-md px-8 border-b border-white/5 sticky top-0 z-30">
+          <div className="w-80">
+            <GlobalSearch />
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-slate-400 capitalize">
+              Role: <span className="text-cyan-400 font-semibold">{user?.role?.replace('Organization ', '')}</span>
+            </span>
+          </div>
+        </header>
+
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between h-16 bg-[#0b0f19] px-4 border-b border-white/5 sticky top-0 z-40">
           <span className="text-lg font-bold tracking-wider bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
@@ -159,7 +184,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               {/* Navigation Links */}
               <nav className="mt-5 px-4 space-y-1 overflow-y-auto flex-1">
-                {navigation.map((item) => {
+                {visibleNavigation.map((item) => {
                   const active = pathname === item.href;
                   return (
                     <Link

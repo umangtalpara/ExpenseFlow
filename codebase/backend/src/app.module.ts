@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TenantMiddleware } from './common/tenant/tenant.middleware';
 import { tenantIsolationPlugin } from './common/tenant/tenant-isolation.plugin';
+import { auditLogPlugin } from './common/tenant/audit-log.plugin';
 import { TenantInterceptor } from './common/interceptors/tenant.interceptor';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
@@ -24,6 +25,9 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { PaymentMethodsModule } from './modules/payment-methods/payment-methods.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { ApprovalsModule } from './modules/approvals/approvals.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { ReimbursementsModule } from './modules/reimbursements/reimbursements.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -42,6 +46,7 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
         uri: config.get<string>('MONGODB_URI'),
         connectionFactory: (connection) => {
           connection.plugin(tenantIsolationPlugin);
+          connection.plugin(auditLogPlugin);
           return connection;
         },
       }),
@@ -75,6 +80,9 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
     PaymentMethodsModule,
     ExpensesModule,
     ApprovalsModule,
+    AuditLogsModule,
+    ReimbursementsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

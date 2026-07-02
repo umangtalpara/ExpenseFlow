@@ -11,6 +11,7 @@ import { OrganizationStatus } from '../organizations/schemas/organization.schema
 import { UserStatus } from '../users/schemas/user.schema';
 import { runWithTenant } from '../../common/tenant/tenant.context';
 import { LoginDto, SignupDto, ResetPasswordDto } from './dto/auth.dto';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 const DEFAULT_PERMISSIONS = [
   { name: 'expenses:create', description: 'Create expense claims' },
@@ -18,6 +19,8 @@ const DEFAULT_PERMISSIONS = [
   { name: 'expenses:approve', description: 'Approve or reject expense claims' },
   { name: 'projects:manage', description: 'Manage projects and assignments' },
   { name: 'users:manage', description: 'Manage organization users and invitations' },
+  { name: 'reimbursements:manage', description: 'Manage reimbursements and payouts' },
+  { name: 'audit-logs:view', description: 'View audit logs' },
 ];
 
 @Injectable()
@@ -29,6 +32,7 @@ export class AuthService {
     private readonly permissionRepository: PermissionRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly auditLogsService: AuditLogsService,
   ) { }
 
   async signup(dto: SignupDto) {
@@ -104,6 +108,15 @@ export class AuthService {
       });
     });
 
+    await this.auditLogsService.log({
+      action: 'SIGNUP',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      organizationId: orgId,
+      userId: user._id.toString(),
+      details: { email: user.email, name: user.name },
+    });
+
     return this.generateTokens(user);
   }
 
@@ -118,7 +131,27 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    await this.auditLogsService.log({
+      action: 'LOGIN',
+      entityType: 'User',
+      entityId: user._id.toString(),
+      organizationId: user.organization.toString(),
+      userId: user._id.toString(),
+      details: { email: user.email },
+    });
+
     return this.generateTokens(user);
+  }
+
+  async logout(user: any) {
+    await this.auditLogsService.log({
+      action: 'LOGOUT',
+      entityType: 'User',
+      entityId: user.id,
+      organizationId: user.organization,
+      userId: user.id,
+      details: { email: user.email },
+    });
   }
 
   async refreshToken(token: string) {

@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 
 export interface TenantContextStore {
   organizationId: string;
+  userId?: string;
 }
 
 export const tenantLocalStorage = new AsyncLocalStorage<TenantContextStore>();
