@@ -84,7 +84,7 @@ export default function ProjectsPage() {
         );
         return {
           ...proj,
-          spent: budgetDoc ? budgetDoc.spent : 0,
+          spent: proj.spent || (budgetDoc ? budgetDoc.spent : 0),
         };
       });
       setProjects(matchedData);
