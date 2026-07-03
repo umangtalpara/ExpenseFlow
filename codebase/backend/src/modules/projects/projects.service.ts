@@ -42,6 +42,14 @@ export class ProjectsService {
     return this.projectRepository.find({});
   }
 
+  async findMine(userId: string) {
+    const { Types } = await import('mongoose');
+    const oid = new Types.ObjectId(userId);
+    return this.projectRepository.find({
+      $or: [{ employees: oid }, { projectManagers: oid }],
+    });
+  }
+
   async findOne(id: string) {
     const project = await this.projectRepository.findById(id);
     if (!project) {

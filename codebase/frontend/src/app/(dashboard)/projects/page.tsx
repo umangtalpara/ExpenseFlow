@@ -62,7 +62,9 @@ export default function ProjectsPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await api.get('/projects');
+      // Admins see all projects; regular employees see only their assigned ones
+      const endpoint = isAdmin ? '/projects' : '/projects/my';
+      const response = await api.get(endpoint);
       setProjects(response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load projects');

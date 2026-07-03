@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto, UpdateProjectDto, AssignMembersDto, AssignManagersDto } from './dto/project.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -22,6 +22,12 @@ export class ProjectsController {
   @HttpCode(HttpStatus.OK)
   findAll() {
     return this.projectsService.findAll();
+  }
+
+  @Get('my')
+  @HttpCode(HttpStatus.OK)
+  findMine(@Req() req: any) {
+    return this.projectsService.findMine(req.user.id);
   }
 
   @Get(':id')

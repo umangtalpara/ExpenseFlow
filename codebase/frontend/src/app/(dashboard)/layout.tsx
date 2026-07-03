@@ -46,15 +46,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
 
   const visibleNavigation = navigation.filter((item) => {
-    if (item.name === 'Audit Logs' || item.name === 'Reimbursements') {
-      const isOrgAdmin = user?.role === 'Organization Admin' || user?.role?.includes('Admin');
+    const isOrgAdmin = !!(
+      user?.role === 'Organization Admin' ||
+      user?.role === 'Administrator' ||
+      user?.role?.includes('Admin')
+    );
+    const isPM = user?.role === 'Project Manager';
+
+    // Admin-only items
+    if (
+      item.name === 'Audit Logs' ||
+      item.name === 'Reimbursements' ||
+      item.name === 'Org Settings' ||
+      item.name === 'Security' ||
+      item.name === 'Employees'
+    ) {
       return isOrgAdmin;
     }
+
+    // Admin + Project Manager
     if (item.name === 'Reports') {
-      const isOrgAdmin = user?.role === 'Organization Admin' || user?.role?.includes('Admin');
-      const isPM = user?.role === 'Project Manager';
       return isOrgAdmin || isPM;
     }
+
     return true;
   });
 
