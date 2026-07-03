@@ -114,7 +114,7 @@ export class ExpensesService {
     if (query?.status) {
       filter.status = query.status;
     }
-    return this.expenseRepository.find(filter);
+    return this.expenseRepository.find(filter, { populate: ['category', 'paymentMethod', 'project', 'employee'] });
   }
 
   async findOne(id: string) {

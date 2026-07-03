@@ -23,7 +23,11 @@ export class ExpenseRepository {
   }
 
   async find(filter: Record<string, any> = {}, options: Record<string, any> = {}): Promise<ExpenseDocument[]> {
-    return this.model.find(filter).sort({ date: -1 }).setOptions(options).exec();
+    let query = this.model.find(filter).sort({ date: -1 });
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+    return query.setOptions(options).exec();
   }
 
   async update(id: string, data: Partial<Expense>, options: Record<string, any> = {}): Promise<ExpenseDocument | null> {

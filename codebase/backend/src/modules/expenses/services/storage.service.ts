@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { join } from 'path';
@@ -47,18 +47,24 @@ export class StorageService {
         );
         return `https://${this.bucketName}.s3.${region}.amazonaws.com/${key}`;
       } catch (err: any) {
-        this.logger.error(`S3 Upload failed: ${err.message}. Falling back to local storage.`);
+        this.logger.error(`S3 Upload failed: ${err.message}.`);
+        throw new BadRequestException(`S3 Upload failed: ${err.message}`);
       }
     }
 
-    // Local disk fallback
-    const uploadsDir = join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+      // Local disk fallback
+      const uploadsDir = join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filename = `${uniqueSuffix}-${file.originalname}`;
+      const localFilePath = join(uploadsDir, filename);
+      fs.writeFileSync(localFilePath, file.buffer);
+      return `/uploads/${filename}`;
+    } catch (err: any) {
+      this.logger.error(`Local file write failed: ${err.message}`);
+      throw new BadRequestException(`File upload failed: Local storage is read-only or not writable on server environment. Details: ${err.message}`);
     }
-    const filename = `${uniqueSuffix}-${file.originalname}`;
-    const localFilePath = join(uploadsDir, filename);
-    fs.writeFileSync(localFilePath, file.buffer);
-    return `/uploads/${filename}`;
   }
 }
