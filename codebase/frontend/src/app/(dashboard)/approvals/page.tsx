@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import { Inbox, Settings, History, Check, X, Plus, Trash2, Eye, ShieldAlert, Loader, RefreshCw, Receipt } from 'lucide-react';
 
 interface ApprovalStep {
@@ -60,6 +61,7 @@ interface ApprovalRequestItem {
 
 export default function ApprovalsPage() {
   const { user: currentUser } = useAuthStore();
+  const { currency: orgCurrency } = useOrgStore();
   const [activeTab, setActiveTab] = useState<'inbox' | 'designer' | 'history'>('inbox');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -513,7 +515,7 @@ export default function ApprovalsPage() {
                           <td className="p-4">{item.expense?.employee?.name || 'System / Auto'}</td>
                           <td className="p-4 font-semibold text-white">{item.expense?.merchant || 'Deleted Expense'}</td>
                           <td className="p-4 text-right font-bold font-mono">
-                            {item.expense?.amount?.toLocaleString(undefined, { style: 'currency', currency: item.expense.currency || 'USD' })}
+                            {item.expense?.amount?.toLocaleString(undefined, { style: 'currency', currency: item.expense.currency || orgCurrency })}
                           </td>
                           <td className="p-4">
                             <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${

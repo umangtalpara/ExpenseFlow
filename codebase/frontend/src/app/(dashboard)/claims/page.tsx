@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import { FilePlus, FileText, Trash2, RefreshCw, X, Receipt, Upload, Check, ChevronRight, ChevronLeft, AlertTriangle } from 'lucide-react';
 
 interface CategoryOption {
@@ -39,6 +40,7 @@ interface ExpenseClaimItem {
 
 export default function ClaimsPage() {
   const { user: currentUser } = useAuthStore();
+  const { currency: orgCurrency } = useOrgStore();
   const [claims, setClaims] = useState<ExpenseClaimItem[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<DropdownOption[]>([]);
@@ -70,6 +72,13 @@ export default function ClaimsPage() {
     receiptFile: null as File | null,
     receiptUrl: '',
   });
+
+  useEffect(() => {
+    if (orgCurrency) {
+      setCreateForm((f) => ({ ...f, currency: orgCurrency }));
+    }
+  }, [orgCurrency]);
+
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   const loadData = async () => {
@@ -111,8 +120,8 @@ export default function ClaimsPage() {
         setCreateSubmitting(false);
         return;
       }
-      if (selectedCategory.maxLimit && createForm.amount > selectedCategory.maxLimit && createForm.currency === 'USD') {
-        setError(`This expense exceeds the category limit of $${selectedCategory.maxLimit}`);
+      if (selectedCategory.maxLimit && createForm.amount > selectedCategory.maxLimit && createForm.currency === orgCurrency) {
+        setError(`This expense exceeds the category limit of ${selectedCategory.maxLimit} ${orgCurrency}`);
         setCreateSubmitting(false);
         return;
       }
@@ -148,7 +157,7 @@ export default function ClaimsPage() {
   const resetForm = () => {
     setCreateForm({
       amount: 0,
-      currency: 'USD',
+      currency: orgCurrency || 'USD',
       date: new Date().toISOString().split('T')[0],
       category: '',
       paymentMethod: '',
@@ -309,7 +318,7 @@ export default function ClaimsPage() {
         <div className="rounded-xl border border-white/5 bg-[#0b0f19]/60 p-5 space-y-1">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Approved Total (Base)</span>
           <p className="text-2xl font-extrabold text-white">
-            {totalReimbursedAmount.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+            {totalReimbursedAmount.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
           </p>
         </div>
       </div>
@@ -370,7 +379,7 @@ export default function ClaimsPage() {
                       {claim.amount.toLocaleString(undefined, { style: 'currency', currency: claim.currency })}
                     </td>
                     <td className="p-4 text-right font-semibold text-slate-200">
-                      {claim.convertedAmount.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+                      {claim.convertedAmount.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
                       {claim.exchangeRate !== 1 && (
                         <span className="block text-[9px] text-slate-500">Rate: {claim.exchangeRate}</span>
                       )}

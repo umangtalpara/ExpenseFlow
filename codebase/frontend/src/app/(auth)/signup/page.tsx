@@ -14,6 +14,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [orgName, setOrgName] = useState('');
   const [orgSlug, setOrgSlug] = useState('');
+  const [currency, setCurrency] = useState('USD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -43,6 +44,7 @@ export default function SignupPage() {
         password,
         orgName,
         orgSlug,
+        currency,
       });
 
       setSuccess(true);
@@ -116,6 +118,27 @@ export default function SignupPage() {
               {orgSlug && (
                 <span className="ml-1 text-cyan-500 font-mono">({orgSlug})</span>
               )}
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="currency" className="block text-sm font-medium text-slate-300 mb-1">
+              Default Currency
+            </label>
+            <select
+              id="currency"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="INR">INR (₹)</option>
+              <option value="CAD">CAD ($)</option>
+            </select>
+            <p className="mt-1.5 text-xs text-amber-400 font-semibold flex items-center gap-1">
+              <span>⚠️ Warning: The organization's default currency CANNOT be changed once created.</span>
             </p>
           </div>
 

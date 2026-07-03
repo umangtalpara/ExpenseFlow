@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import { FolderPlus, Users, Calendar, DollarSign, RefreshCw, X, ShieldAlert, Check } from 'lucide-react';
 
 interface UserOption {
@@ -29,6 +30,8 @@ export default function ProjectsPage() {
   const { user: currentUser } = useAuthStore();
   const isAdmin = currentUser?.role === 'Administrator' || currentUser?.role === 'Organization Admin' || currentUser?.role?.includes('Admin');
 
+  const { currency: orgCurrency } = useOrgStore();
+
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [allUsers, setAllUsers] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,13 @@ export default function ProjectsPage() {
     endDate: '',
     status: 'active',
   });
+
+  useEffect(() => {
+    if (orgCurrency) {
+      setCreateForm((f) => ({ ...f, currency: orgCurrency }));
+    }
+  }, [orgCurrency]);
+
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   // Members selection form
@@ -111,7 +121,7 @@ export default function ProjectsPage() {
         code: '',
         client: '',
         budget: 0,
-        currency: 'USD',
+        currency: orgCurrency || 'USD',
         startDate: '',
         endDate: '',
         status: 'active',

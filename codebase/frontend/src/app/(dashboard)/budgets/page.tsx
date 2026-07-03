@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import { Landmark, AlertTriangle, Coins, RefreshCw, X, PlusCircle, Check, Play } from 'lucide-react';
 
 interface ProjectOption {
@@ -38,6 +39,7 @@ interface AlertLogItem {
 
 export default function BudgetsPage() {
   const { user: currentUser } = useAuthStore();
+  const { currency: orgCurrency } = useOrgStore();
   const isAdmin = currentUser?.role === 'Administrator' || currentUser?.role === 'Organization Admin' || currentUser?.role?.includes('Admin');
 
   const [budgets, setBudgets] = useState<BudgetCardItem[]>([]);
@@ -62,6 +64,13 @@ export default function BudgetsPage() {
     endDate: '',
     thresholds: '80, 100',
   });
+
+  useEffect(() => {
+    if (orgCurrency) {
+      setCreateForm((f) => ({ ...f, currency: orgCurrency }));
+    }
+  }, [orgCurrency]);
+
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   const [simSpentAmount, setSimSpentAmount] = useState(1000);
@@ -120,7 +129,7 @@ export default function BudgetsPage() {
         scope: 'project',
         project: '',
         amount: 0,
-        currency: 'USD',
+        currency: orgCurrency || 'USD',
         startDate: '',
         endDate: '',
         thresholds: '80, 100',
@@ -220,7 +229,7 @@ export default function BudgetsPage() {
         <div className="rounded-xl border border-white/5 bg-[#0b0f19]/60 p-5 space-y-2">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Company Budget Cap</span>
           <p className="text-2xl font-extrabold text-white">
-            {totalOrgBudgetAmount.toLocaleString(undefined, { style: 'currency', currency: orgBudget?.currency || 'USD' })}
+            {totalOrgBudgetAmount.toLocaleString(undefined, { style: 'currency', currency: orgBudget?.currency || orgCurrency || 'USD' })}
           </p>
           <p className="text-[10px] text-slate-500">
             {orgBudget ? `Period: ${new Date(orgBudget.startDate).toLocaleDateString()} - ${new Date(orgBudget.endDate).toLocaleDateString()}` : 'No active Org Budget'}
@@ -230,7 +239,7 @@ export default function BudgetsPage() {
         <div className="rounded-xl border border-white/5 bg-[#0b0f19]/60 p-5 space-y-2">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Allocated to Projects</span>
           <p className="text-2xl font-extrabold text-cyan-400">
-            {totalAllocatedToProjects.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+            {totalAllocatedToProjects.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
           </p>
           <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
             <div
@@ -243,7 +252,7 @@ export default function BudgetsPage() {
         <div className="rounded-xl border border-white/5 bg-[#0b0f19]/60 p-5 space-y-2">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Spent (Projects)</span>
           <p className="text-2xl font-extrabold text-amber-400">
-            {totalSpentAcrossProjects.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+            {totalSpentAcrossProjects.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
           </p>
           <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
             <div
@@ -256,7 +265,7 @@ export default function BudgetsPage() {
         <div className="rounded-xl border border-white/5 bg-[#0b0f19]/60 p-5 space-y-2">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Remaining Buffer Cap</span>
           <p className="text-2xl font-extrabold text-emerald-400">
-            {remainingOrgBuffer.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+            {remainingOrgBuffer.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
           </p>
           <p className="text-[10px] text-slate-500">Unallocated organization balance</p>
         </div>

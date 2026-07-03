@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import {
   Building2,
   Users2,
@@ -73,8 +74,10 @@ export default function DashboardHome() {
     fetchMetrics();
   }, []);
 
+  const { currency: orgCurrency } = useOrgStore();
+
   const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    return amount.toLocaleString('en-IN', { style: 'currency', currency: orgCurrency });
   };
 
   if (loading) {

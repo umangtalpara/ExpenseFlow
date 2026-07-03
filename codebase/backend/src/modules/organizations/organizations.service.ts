@@ -24,7 +24,9 @@ export class OrganizationsService {
     if (!tenantId) {
       throw new NotFoundException('Tenant context not found');
     }
-    const updated = await this.organizationRepository.update(tenantId, dto);
+    const updateData = { ...dto };
+    delete updateData.currency; // Prevent changing currency after creation
+    const updated = await this.organizationRepository.update(tenantId, updateData);
     if (!updated) {
       throw new NotFoundException('Organization not found');
     }

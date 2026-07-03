@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import { GlobalSearch } from '@/components/global-search';
 import { NotificationsDropdown } from '@/components/notifications-dropdown';
 import {
@@ -42,6 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user, clearAuth } = useAuthStore();
+  const { fetchOrgProfile } = useOrgStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -74,11 +76,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     setMounted(true);
-    // Simple client-side auth guard redirection
     if (!isAuthenticated) {
       router.push('/login');
+    } else {
+      // Bootstrap org currency/name for the whole session
+      fetchOrgProfile();
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, fetchOrgProfile]);
 
   const handleLogout = () => {
     clearAuth();

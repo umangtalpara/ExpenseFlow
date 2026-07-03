@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import {
   BarChart3,
   Download,
@@ -47,6 +48,7 @@ interface ExpenseItem {
 
 export default function ReportsPage() {
   const { user } = useAuthStore();
+  const { currency: orgCurrency } = useOrgStore();
   const isAdmin = user?.role === 'Organization Admin' || user?.role?.includes('Admin');
   const isPM = user?.role === 'Project Manager';
 
@@ -478,9 +480,9 @@ export default function ReportsPage() {
                         <p className="font-bold text-white text-base">
                           {exp.amount.toLocaleString()} {exp.currency}
                         </p>
-                        {exp.currency !== 'USD' && (
+                        {exp.currency !== orgCurrency && (
                           <p className="text-[10px] text-slate-500">
-                            ~ {exp.convertedAmount.toLocaleString()} USD
+                            ~ {exp.convertedAmount.toLocaleString()} {orgCurrency}
                           </p>
                         )}
                       </div>

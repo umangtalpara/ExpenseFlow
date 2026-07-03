@@ -57,6 +57,7 @@ export class AuthService {
       name: dto.orgName,
       slug: dto.orgSlug,
       status: OrganizationStatus.ACTIVE,
+      currency: dto.currency || 'USD',
     });
     const orgId = org._id.toString();
 

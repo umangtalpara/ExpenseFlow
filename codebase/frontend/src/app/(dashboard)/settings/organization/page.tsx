@@ -157,16 +157,16 @@ function ProfileTab({ isAdmin }: { isAdmin: boolean }) {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-300">Default Currency</label>
-            <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
-              disabled={!isAdmin || saving}
-              className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50">
+            <label className="block text-sm font-semibold text-slate-300">Default Currency <span className="text-slate-500 font-normal">(read-only)</span></label>
+            <select value={form.currency} disabled
+              className="mt-2 w-full rounded-lg border border-white/5 bg-[#070911] px-4 py-2.5 text-sm text-slate-400 cursor-not-allowed">
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
               <option value="GBP">GBP (£)</option>
               <option value="INR">INR (₹)</option>
               <option value="CAD">CAD ($)</option>
             </select>
+            <p className="mt-1.5 text-xs text-amber-500 font-medium">⚠️ Organization currency cannot be changed after creation.</p>
           </div>
           <div className="sm:col-span-2">
             <label className="block text-sm font-semibold text-slate-300">Office Address</label>
