@@ -138,7 +138,7 @@ export default function SignupPage() {
               <option value="CAD">CAD ($)</option>
             </select>
             <p className="mt-1.5 text-xs text-amber-400 font-semibold flex items-center gap-1">
-              <span>⚠️ Warning: The organization's default currency CANNOT be changed once created.</span>
+              <span>⚠️ Warning: The organization&apos;s default currency CANNOT be changed once created.</span>
             </p>
           </div>
 
