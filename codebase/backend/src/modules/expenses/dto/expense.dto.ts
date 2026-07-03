@@ -51,6 +51,10 @@ export class CreateExpenseDto {
   @IsEnum(ExpenseStatus)
   @IsOptional()
   status?: ExpenseStatus;
+
+  @IsString()
+  @IsOptional()
+  employee?: string;
 }
 
 export class UpdateExpenseDto {

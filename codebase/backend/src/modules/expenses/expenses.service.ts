@@ -88,7 +88,7 @@ export class ExpensesService {
       category: new Types.ObjectId(dto.category),
       paymentMethod: new Types.ObjectId(dto.paymentMethod),
       project: dto.project ? new Types.ObjectId(dto.project) : undefined,
-      employee: new Types.ObjectId(userId),
+      employee: new Types.ObjectId(dto.employee || userId),
       organization: tenantId as any,
     });
 

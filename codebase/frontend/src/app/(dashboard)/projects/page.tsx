@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgStore } from '@/store/org.store';
-import { FolderPlus, Users, Calendar, DollarSign, RefreshCw, X, ShieldAlert, Check } from 'lucide-react';
+import { FolderPlus, Users, Calendar, DollarSign, RefreshCw, X, ShieldAlert, Check, Plus, AlertTriangle } from 'lucide-react';
 
 interface UserOption {
   _id: string;
@@ -42,8 +42,22 @@ export default function ProjectsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
+  const [directExpenseModalOpen, setDirectExpenseModalOpen] = useState(false);
+  const [directExpenseSubmitting, setDirectExpenseSubmitting] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
 
   // Forms
+  const [directExpenseForm, setDirectExpenseForm] = useState({
+    employee: '',
+    merchant: '',
+    date: new Date().toISOString().split('T')[0],
+    amount: 0,
+    category: '',
+    paymentMethod: '',
+    description: '',
+  });
+
   const [createForm, setCreateForm] = useState({
     name: '',
     code: '',
@@ -104,10 +118,65 @@ export default function ProjectsPage() {
     }
   };
 
+  const loadFilters = async () => {
+    try {
+      const [catRes, pmRes] = await Promise.all([
+        api.get('/categories'),
+        api.get('/payment-methods'),
+      ]);
+      setCategories(catRes.data.filter((c: any) => c.status === 'active'));
+      setPaymentMethods(pmRes.data.filter((pm: any) => pm.status === 'active'));
+    } catch (err) {
+      console.error('Failed to load categories or payment methods', err);
+    }
+  };
+
   useEffect(() => {
     loadProjects();
     loadUsers();
+    loadFilters();
   }, []);
+
+  const openDirectExpenseModal = (project: ProjectItem) => {
+    setSelectedProject(project);
+    setDirectExpenseForm({
+      employee: '',
+      merchant: '',
+      date: new Date().toISOString().split('T')[0],
+      amount: 0,
+      category: '',
+      paymentMethod: '',
+      description: '',
+    });
+    setDirectExpenseModalOpen(true);
+  };
+
+  const handleDirectExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProject || !isAdmin) return;
+
+    setDirectExpenseSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const payload = {
+        ...directExpenseForm,
+        project: selectedProject._id,
+        currency: selectedProject.currency, // Use project's currency
+        status: 'approved', // Direct entries are pre-approved
+      };
+
+      await api.post('/expenses', payload);
+      setSuccess(`Direct expense successfully logged and approved for project "${selectedProject.name}"!`);
+      setDirectExpenseModalOpen(false);
+      loadProjects();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to log direct project expense');
+    } finally {
+      setDirectExpenseSubmitting(false);
+    }
+  };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -323,13 +392,20 @@ export default function ProjectsPage() {
 
               {/* Actions */}
               {isAdmin && (
-                <div className="pt-3 border-t border-white/5 flex justify-end">
+                <div className="pt-3 border-t border-white/5 flex gap-2 justify-end">
                   <button
                     onClick={() => openMembersModal(project)}
-                    className="flex items-center text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/5 px-3 py-1.5 rounded-lg border border-cyan-500/25 transition-all duration-200"
+                    className="flex items-center text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/5 px-2.5 py-1.5 rounded-lg border border-cyan-500/25 transition-all duration-200"
                   >
-                    <Users className="mr-1.5 h-3.5 w-3.5" />
+                    <Users className="mr-1 h-3.5 w-3.5" />
                     Assign Members
+                  </button>
+                  <button
+                    onClick={() => openDirectExpenseModal(project)}
+                    className="flex items-center text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/25 transition-all duration-200"
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Add Expense
                   </button>
                 </div>
               )}
@@ -554,6 +630,142 @@ export default function ProjectsPage() {
                   className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
                 >
                   {membersSubmitting ? 'Saving...' : 'Save Assignments'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Direct Project Expense Modal */}
+      {directExpenseModalOpen && selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDirectExpenseModalOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-xl border border-white/5 bg-[#0b0f19] p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-white">Add Project Expense</h3>
+                <p className="text-xs text-slate-500 font-mono uppercase">Project: {selectedProject.name} ({selectedProject.code})</p>
+              </div>
+              <button onClick={() => setDirectExpenseModalOpen(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDirectExpenseSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Employee *</label>
+                <select
+                  value={directExpenseForm.employee}
+                  onChange={(e) => setDirectExpenseForm({ ...directExpenseForm, employee: e.target.value })}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                  required
+                >
+                  <option value="">Select Employee...</option>
+                  {allUsers.map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.name} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Merchant *</label>
+                  <input
+                    type="text"
+                    value={directExpenseForm.merchant}
+                    onChange={(e) => setDirectExpenseForm({ ...directExpenseForm, merchant: e.target.value })}
+                    placeholder="AWS / Software Licence"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Date *</label>
+                  <input
+                    type="date"
+                    value={directExpenseForm.date}
+                    onChange={(e) => setDirectExpenseForm({ ...directExpenseForm, date: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Amount ({selectedProject.currency}) *</label>
+                  <input
+                    type="number"
+                    value={directExpenseForm.amount || ''}
+                    onChange={(e) => setDirectExpenseForm({ ...directExpenseForm, amount: Number(e.target.value) })}
+                    placeholder="1500.00"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Category *</label>
+                  <select
+                    value={directExpenseForm.category}
+                    onChange={(e) => setDirectExpenseForm({ ...directExpenseForm, category: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                    required
+                  >
+                    <option value="">Select Category...</option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Payment Method *</label>
+                  <select
+                    value={directExpenseForm.paymentMethod}
+                    onChange={(e) => setDirectExpenseForm({ ...directExpenseForm, paymentMethod: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                    required
+                  >
+                    <option value="">Select Method...</option>
+                    {paymentMethods.map((pm) => (
+                      <option key={pm._id} value={pm._id}>
+                        {pm.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Description (Optional)</label>
+                <textarea
+                  value={directExpenseForm.description}
+                  onChange={(e) => setDirectExpenseForm({ ...directExpenseForm, description: e.target.value })}
+                  placeholder="Additional context about this project expenditure..."
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  rows={2}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setDirectExpenseModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={directExpenseSubmitting}
+                  className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold transition-colors text-sm"
+                >
+                  {directExpenseSubmitting ? 'Logging...' : 'Log & Approve Expense'}
                 </button>
               </div>
             </form>
