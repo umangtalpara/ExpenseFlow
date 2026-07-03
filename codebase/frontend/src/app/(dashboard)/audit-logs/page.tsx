@@ -52,8 +52,7 @@ export default function AuditLogsPage() {
   const loadUsers = async () => {
     try {
       const response = await api.get('/users?limit=100');
-      // If endpoint returns { data, total }, use data, else use response.data directly
-      const usersList = response.data.data || response.data || [];
+      const usersList = response.data.users || response.data.data || response.data || [];
       setUsers(usersList);
     } catch (err) {
       console.error('Failed to load users list for filter selection', err);
