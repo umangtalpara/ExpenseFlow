@@ -93,7 +93,7 @@ export default function ReportsPage() {
       ]);
 
       setProjects(projRes.data || []);
-      setEmployees(empRes.data.data || empRes.data || []);
+      setEmployees(empRes.data.users || empRes.data.data || empRes.data || []);
       setVendors(vendRes.data || []);
       setCategories(catRes.data || []);
       setPaymentMethods(pmRes.data || []);
