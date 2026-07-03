@@ -74,8 +74,20 @@ export default function ProjectsPage() {
     try {
       // Admins see all projects; regular employees see only their assigned ones
       const endpoint = isAdmin ? '/projects' : '/projects/my';
-      const response = await api.get(endpoint);
-      setProjects(response.data);
+      const [projectsResponse, budgetsResponse] = await Promise.all([
+        api.get(endpoint),
+        api.get('/budgets'),
+      ]);
+      const matchedData = projectsResponse.data.map((proj: any) => {
+        const budgetDoc = budgetsResponse.data.find(
+          (b: any) => b.scope === 'project' && b.project === proj._id && b.status === 'active'
+        );
+        return {
+          ...proj,
+          spent: budgetDoc ? budgetDoc.spent : 0,
+        };
+      });
+      setProjects(matchedData);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load projects');
     } finally {
@@ -278,14 +290,23 @@ export default function ProjectsPage() {
                     {project.budget.toLocaleString(undefined, { style: 'currency', currency: project.currency })}
                   </span>
                 </div>
-                {/* Budget Health Bar (0% spent placeholder) */}
-                <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
-                  <div className="bg-cyan-500 h-full w-[0%]" />
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                  <span>0% Spent</span>
-                  <span>100% Remaining</span>
-                </div>
+                {(() => {
+                  const spent = (project as any).spent || 0;
+                  const budget = project.budget || 1;
+                  const spentPct = Math.min(100, Math.round((spent / budget) * 100));
+                  const remainingPct = Math.max(0, 100 - spentPct);
+                  return (
+                    <>
+                      <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
+                        <div className="bg-cyan-500 h-full" style={{ width: `${spentPct}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>{spentPct}% Spent</span>
+                        <span>{remainingPct}% Remaining</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Members Count & Timeline */}

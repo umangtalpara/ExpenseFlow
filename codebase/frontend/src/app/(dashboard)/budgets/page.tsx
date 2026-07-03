@@ -441,12 +441,10 @@ export default function BudgetsPage() {
                   <select
                     value={createForm.currency}
                     onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 opacity-70"
+                    disabled
                   >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="INR">INR (₹)</option>
+                    <option value={orgCurrency || 'USD'}>{orgCurrency || 'USD'}</option>
                   </select>
                 </div>
 

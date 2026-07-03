@@ -361,7 +361,7 @@ export default function ClaimsPage() {
                     <td className="p-4 font-mono">{new Date(claim.date).toLocaleDateString()}</td>
                     <td className="p-4 font-semibold text-white">{claim.merchant}</td>
                     <td className="p-4">{claim.vendor || <span className="text-slate-600">N/A</span>}</td>
-                    <td className="p-4 font-mono">{claim.gst ? `$${claim.gst}` : <span className="text-slate-600">N/A</span>}</td>
+                    <td className="p-4 font-mono">{claim.gst ? claim.gst.toLocaleString(undefined, { style: 'currency', currency: claim.currency }) : <span className="text-slate-600">N/A</span>}</td>
                     <td className="p-4">
                       <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-medium font-mono uppercase">
                         {claim.category?.name || 'N/A'}
@@ -490,8 +490,8 @@ export default function ClaimsPage() {
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Amount</label>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Amount ({orgCurrency})</label>
                       <input
                         type="number"
                         value={createForm.amount}
@@ -500,19 +500,6 @@ export default function ClaimsPage() {
                         className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
                         required
                       />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Currency</label>
-                      <select
-                        value={createForm.currency}
-                        onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
-                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
-                      >
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="INR">INR (₹)</option>
-                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Vendor (Optional)</label>
@@ -553,7 +540,7 @@ export default function ClaimsPage() {
                         <option value="">Select Category...</option>
                         {categories.map((c) => (
                           <option key={c._id} value={c._id}>
-                            {c.name} {c.maxLimit ? `(Limit: $${c.maxLimit})` : ''}
+                            {c.name} {c.maxLimit ? `(Limit: ${orgCurrency} ${c.maxLimit.toLocaleString()})` : ''}
                           </option>
                         ))}
                       </select>
@@ -609,7 +596,7 @@ export default function ClaimsPage() {
                       <div className="space-y-0.5">
                         <span className="font-semibold block">Category Rules:</span>
                         {selectedCategoryObj.requireReceipt && <span className="block">• Receipt attachment is MANDATORY for submission.</span>}
-                        {selectedCategoryObj.maxLimit && <span className="block">• Limit: Expenses cannot exceed ${selectedCategoryObj.maxLimit}.</span>}
+                        {selectedCategoryObj.maxLimit && <span className="block">• Limit: Expenses cannot exceed {orgCurrency} {selectedCategoryObj.maxLimit.toLocaleString()}.</span>}
                       </div>
                     </div>
                   )}

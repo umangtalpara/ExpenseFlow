@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import { Trash2, Plus, RefreshCw, Tag, Edit3, X, Check, AlertCircle } from 'lucide-react';
 
 interface Category {
@@ -26,6 +27,7 @@ const emptyForm = {
 
 export default function CategoriesSettingsPage() {
   const { user } = useAuthStore();
+  const { currency: orgCurrency } = useOrgStore();
   const isAdmin =
     user?.role === 'Administrator' ||
     user?.role === 'Organization Admin' ||
@@ -225,7 +227,7 @@ export default function CategoriesSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Max Limit ($)</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Max Limit ({orgCurrency})</label>
                   <input
                     type="number"
                     min="0"
@@ -390,7 +392,7 @@ export default function CategoriesSettingsPage() {
                           </td>
                           <td className="px-5 py-4 text-sm font-mono text-cyan-400 whitespace-nowrap">{item.code}</td>
                           <td className="px-5 py-4 text-sm text-slate-300 whitespace-nowrap">
-                            {item.maxLimit ? `$${item.maxLimit.toLocaleString()}` : <span className="text-slate-600">—</span>}
+                             {item.maxLimit ? `${orgCurrency} ${item.maxLimit.toLocaleString()}` : <span className="text-slate-600">—</span>}
                           </td>
                           <td className="px-5 py-4 whitespace-nowrap">
                             {item.requireReceipt ? (

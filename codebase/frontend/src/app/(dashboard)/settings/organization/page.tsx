@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgStore } from '@/store/org.store';
 import {
   Building2,
   Save,
@@ -202,6 +203,7 @@ function ProfileTab({ isAdmin }: { isAdmin: boolean }) {
 const catEmpty = { name: '', code: '', description: '', status: 'active' as 'active' | 'inactive', requireReceipt: false, maxLimit: '' };
 
 function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
+  const { currency: orgCurrency } = useOrgStore();
   const [items, setItems] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -273,7 +275,7 @@ function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
                   <input type="text" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="TRAVEL" className={`${inputCls} uppercase`} disabled={submitting} required /></div>
                 <div><label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Description</label>
                   <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional" className={inputCls} disabled={submitting} /></div>
-                <div><label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Max Limit ($)</label>
+                <div><label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Max Limit ({orgCurrency})</label>
                   <input type="number" min="0" value={form.maxLimit} onChange={(e) => setForm({ ...form, maxLimit: e.target.value })} placeholder="No limit" className={inputCls} disabled={submitting} /></div>
                 <div><label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Status</label>
                   <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as 'active' | 'inactive' })} className={selectCls} disabled={submitting}>
@@ -305,7 +307,7 @@ function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-white/5">
                   <thead><tr>
-                    {['Name', 'Code', 'Max $', 'Receipt', 'Status', ...(isAdmin ? [''] : [])].map((h) => (
+                    {['Name', 'Code', `Max (${orgCurrency})`, 'Receipt', 'Status', ...(isAdmin ? [''] : [])].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">{h}</th>
                     ))}
                   </tr></thead>
@@ -318,7 +320,7 @@ function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
                               {[
                                 { label: 'Name', key: 'name', type: 'text', className: 'min-w-[110px]' },
                                 { label: 'Code', key: 'code', type: 'text', className: 'min-w-[70px] uppercase' },
-                                { label: 'Max $', key: 'maxLimit', type: 'number', className: 'min-w-[70px]' },
+                                { label: `Max (${orgCurrency})`, key: 'maxLimit', type: 'number', className: 'min-w-[70px]' },
                               ].map(({ label, key, type, className }) => (
                                 <div key={key} className={`flex flex-col gap-0.5 ${className}`}>
                                   <label className="text-[10px] uppercase tracking-wider text-slate-500">{label}</label>
@@ -354,7 +356,7 @@ function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
                             {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
                           </td>
                           <td className="px-4 py-3.5 font-mono text-xs text-cyan-400">{item.code}</td>
-                          <td className="px-4 py-3.5 text-sm text-slate-300">{item.maxLimit ? `$${item.maxLimit.toLocaleString()}` : <span className="text-slate-600">—</span>}</td>
+                          <td className="px-4 py-3.5 text-sm text-slate-300">{item.maxLimit ? `${orgCurrency} ${item.maxLimit.toLocaleString()}` : <span className="text-slate-600">—</span>}</td>
                           <td className="px-4 py-3.5">
                             {item.requireReceipt
                               ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 border border-amber-500/20 text-amber-400">Required</span>
