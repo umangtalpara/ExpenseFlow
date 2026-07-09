@@ -20,6 +20,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
+import { CopyrightFooter } from '@/components/copyright-footer';
 
 interface DashboardData {
   cards: {
@@ -433,6 +434,7 @@ export default function DashboardHome() {
           )}
         </div>
       )}
+      <CopyrightFooter className="mt-12 text-center text-xs text-slate-500/50 w-full" />
     </div>
   );
 }

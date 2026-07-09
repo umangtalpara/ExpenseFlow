@@ -14,9 +14,12 @@ export class MailService {
     const user = this.configService.get<string>('SMTP_USER');
     const pass = this.configService.get<string>('SMTP_PASS');
     const secure = this.configService.get<boolean>('SMTP_SECURE') ?? false;
+    const isTest = this.configService.get<string>('NODE_ENV') === 'test';
 
-    if (!host || !user || !pass) {
-      this.logger.warn('SMTP configuration is incomplete. Mail service will run in log-only mode.');
+    if (!host || !user || !pass || isTest) {
+      this.logger.warn(
+        `SMTP configuration is incomplete or running in test mode. Mail service will run in log-only mode.`
+      );
     } else {
       this.transporter = nodemailer.createTransport({
         host,

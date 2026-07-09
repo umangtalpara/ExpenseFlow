@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { PasswordInput } from '@/components/ui/password-input';
 import axios from 'axios';
 import { API_BASE_URL } from '@/lib/api';
+import { CopyrightFooter } from '@/components/copyright-footer';
 
 function ResetPasswordFormContent() {
   const searchParams = useSearchParams();
@@ -55,87 +56,90 @@ function ResetPasswordFormContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0a0f1d] px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-md shadow-2xl">
-        <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold tracking-tight text-white">
-            Set New Password
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-400">
-            Enter your new secure password details below.
-          </p>
-        </div>
-
-        {error && (
-          <div className="rounded-md bg-red-950/50 border border-red-500/30 p-4 text-sm text-red-400">
-            {error}
+    <main className="flex min-h-screen flex-col bg-[#0a0f1d] px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex-1 flex items-center justify-center w-full">
+        <div className="w-full max-w-md space-y-8 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-md shadow-2xl">
+          <div>
+            <h2 className="mt-2 text-center text-3xl font-extrabold tracking-tight text-white">
+              Set New Password
+            </h2>
+            <p className="mt-2 text-center text-sm text-slate-400">
+              Enter your new secure password details below.
+            </p>
           </div>
-        )}
 
-        {success && (
-          <div className="rounded-md bg-emerald-950/50 border border-emerald-500/30 p-4 text-sm text-emerald-400">
-            Password reset successful! Redirecting to login...
-          </div>
-        )}
+          {error && (
+            <div className="rounded-md bg-red-950/50 border border-red-500/30 p-4 text-sm text-red-400">
+              {error}
+            </div>
+          )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            {!searchParams.get('token') && (
+          {success && (
+            <div className="rounded-md bg-emerald-950/50 border border-emerald-500/30 p-4 text-sm text-emerald-400">
+              Password reset successful! Redirecting to login...
+            </div>
+          )}
+
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              {!searchParams.get('token') && (
+                <div>
+                  <label htmlFor="token" className="block text-sm font-medium text-slate-300 mb-1">
+                    Reset Token
+                  </label>
+                  <input
+                    id="token"
+                    type="text"
+                    required
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Paste token from console"
+                  />
+                </div>
+              )}
+
               <div>
-                <label htmlFor="token" className="block text-sm font-medium text-slate-300 mb-1">
-                  Reset Token
+                <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1">
+                  New Password
                 </label>
-                <input
-                  id="token"
-                  type="text"
+                <PasswordInput
+                  id="password"
                   required
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Paste token from console"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                 />
               </div>
-            )}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1">
-                New Password
-              </label>
-              <PasswordInput
-                id="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
+              <div>
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-300 mb-1">
+                  Confirm New Password
+                </label>
+                <PasswordInput
+                  id="confirm-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-300 mb-1">
-                Confirm New Password
-              </label>
-              <PasswordInput
-                id="confirm-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative flex w-full justify-center rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 py-2 px-4 text-sm font-medium text-white hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-[#0a0f1d] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {loading ? 'Resetting Password...' : 'Reset Password'}
+              </button>
             </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 py-2 px-4 text-sm font-medium text-white hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-[#0a0f1d] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {loading ? 'Resetting Password...' : 'Reset Password'}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+      <CopyrightFooter />
+    </main>
   );
 }
 
