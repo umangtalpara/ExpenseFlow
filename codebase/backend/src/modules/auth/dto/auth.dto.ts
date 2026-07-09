@@ -40,6 +40,10 @@ export class ForgotPasswordDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
+
+  @IsString()
+  @IsOptional()
+  frontendUrl?: string;
 }
 
 export class ResetPasswordDto {

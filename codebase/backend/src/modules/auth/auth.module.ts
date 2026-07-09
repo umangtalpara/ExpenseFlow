@@ -9,6 +9,7 @@ import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
+import { MailModule } from '../mail/mail.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserSession, UserSessionSchema } from './schemas/session.schema';
 
@@ -21,6 +22,7 @@ import { UserSession, UserSessionSchema } from './schemas/session.schema';
     RolesModule,
     PermissionsModule,
     AuditLogsModule,
+    MailModule,
     MongooseModule.forFeature([{ name: UserSession.name, schema: UserSessionSchema }]),
   ],
   providers: [AuthService, JwtStrategy],

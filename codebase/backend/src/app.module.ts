@@ -41,6 +41,12 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
         PORT: Joi.number().default(3001),
         MONGODB_URI: Joi.string().required(),
         REDIS_URL: Joi.string().required(),
+        SMTP_HOST: Joi.string().optional(),
+        SMTP_PORT: Joi.number().optional(),
+        SMTP_USER: Joi.string().optional(),
+        SMTP_PASS: Joi.string().optional(),
+        SMTP_SECURE: Joi.boolean().optional().default(false),
+        SMTP_FROM: Joi.string().optional(),
       }),
     }),
     MongooseModule.forRootAsync({

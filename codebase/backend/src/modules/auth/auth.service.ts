@@ -16,6 +16,7 @@ import { LoginDto, SignupDto, ResetPasswordDto } from './dto/auth.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { UserSession, UserSessionDocument } from './schemas/session.schema';
 import { TotpHelper } from './helpers/totp.helper';
+import { MailService } from '../mail/mail.service';
 
 const DEFAULT_PERMISSIONS = [
   { name: 'expenses:create', description: 'Create expense claims' },
@@ -37,6 +38,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly mailService: MailService,
     @InjectModel(UserSession.name)
     private readonly sessionModel: Model<UserSessionDocument>,
   ) { }
@@ -204,10 +206,11 @@ export class AuthService {
     }
   }
 
-  async forgotPassword(email: string) {
+  async forgotPassword(email: string, frontendUrl?: string): Promise<{ token: string; message: string }> {
     const user = await this.userRepository.findOne({ email }, { bypassTenantIsolation: true });
     if (!user) {
-      return { message: 'Password reset instructions sent if email exists' };
+      // Return a dummy token for testing if user doesn't exist, or just message
+      return { token: '', message: 'Password reset instructions sent if email exists' };
     }
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -224,6 +227,8 @@ export class AuthService {
         }
       });
     });
+
+    await this.mailService.sendPasswordResetMail(user.email, token, frontendUrl);
 
     console.log(`[RESET PASSWORD] Token for ${email}: ${token}`);
     return { token, message: 'Password reset instructions sent if email exists' };
