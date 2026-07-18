@@ -46,6 +46,9 @@ export class Project {
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'Organization', required: true, index: true })
   organization: Types.ObjectId | Organization;
+
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'ApprovalWorkflow', required: false })
+  approvalFlow?: Types.ObjectId | any;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

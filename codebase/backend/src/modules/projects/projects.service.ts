@@ -79,6 +79,17 @@ export class ProjectsService {
       );
     }
 
+    if (dto.approvalFlow) {
+      const ApprovalWorkflowModel = this.connection.model('ApprovalWorkflow');
+      const workflow = await ApprovalWorkflowModel.findOne({
+        _id: new Types.ObjectId(dto.approvalFlow),
+        organization: new Types.ObjectId(tenantId),
+      }).exec();
+      if (!workflow) {
+        throw new BadRequestException('Invalid approval workflow selected');
+      }
+    }
+
     // Create project
     const project = await this.projectRepository.create({
       ...dto,
@@ -165,7 +176,7 @@ export class ProjectsService {
     if (!project) {
       throw new NotFoundException('Project not found');
     }
-    const populated = await project.populate(['projectManagers', 'employees']);
+    const populated = await project.populate(['projectManagers', 'employees', 'approvalFlow']);
     return populated;
   }
 
@@ -191,6 +202,20 @@ export class ProjectsService {
     if (dto.code) updateData.code = dto.code.toUpperCase();
     if (dto.startDate) updateData.startDate = new Date(dto.startDate);
     if (dto.endDate) updateData.endDate = new Date(dto.endDate);
+
+    if (dto.approvalFlow) {
+      const ApprovalWorkflowModel = this.connection.model('ApprovalWorkflow');
+      const workflow = await ApprovalWorkflowModel.findOne({
+        _id: new Types.ObjectId(dto.approvalFlow),
+        organization: project.organization as any,
+      }).exec();
+      if (!workflow) {
+        throw new BadRequestException('Invalid approval workflow selected');
+      }
+      updateData.approvalFlow = new Types.ObjectId(dto.approvalFlow);
+    } else if (dto.approvalFlow === null || dto.approvalFlow === '') {
+      updateData.approvalFlow = null;
+    }
 
     if (dto.budget !== undefined && dto.budget !== null) {
       const BudgetModel = this.connection.model('Budget');

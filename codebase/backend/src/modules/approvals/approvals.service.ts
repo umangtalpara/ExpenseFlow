@@ -84,87 +84,41 @@ export class ApprovalsService {
     const expense = await this.expenseRepo.findById(expenseId);
     if (!expense) return null;
 
-    const workflows = await this.workflowRepo.find({
-      status: WorkflowStatus.ACTIVE,
-      organization: tenantId,
-    });
+    if (expense.project) {
+      const project = await this.projectRepository.findById(expense.project.toString());
+      if (project && project.approvalFlow) {
+        const workflow = await this.workflowRepo.findOne({
+          _id: project.approvalFlow as any,
+          status: WorkflowStatus.ACTIVE,
+          organization: tenantId,
+        });
 
-    if (workflows.length === 0) {
-      // Auto-approve if no workflows exist
-      await this.expenseRepo.update(expenseId, { status: ExpenseStatus.APPROVED });
-      return null;
-    }
+        if (workflow) {
+          // Create ApprovalRequest
+          const request = await this.requestRepo.create({
+            expense: expense._id,
+            workflow: workflow as any,
+            currentStepNumber: 1,
+            status: ApprovalRequestStatus.PENDING,
+            history: [],
+            organization: tenantId as any,
+          });
 
-    let matchedWorkflow: ApprovalWorkflow | null = null;
-    let highestScore = -1;
+          // Notify first step approver(s)
+          const populatedExpense = await expense.populate('employee');
+          const firstStep = workflow.steps.find((s) => s.stepNumber === 1);
+          if (firstStep) {
+            await this.notifyApprovers(firstStep, populatedExpense);
+          }
 
-    for (const wf of workflows) {
-      let score = 0;
-      let matches = true;
-
-      // Category condition matching
-      if (wf.conditions.category) {
-        if (expense.category.toString() === wf.conditions.category.toString()) {
-          score += 10;
-        } else {
-          matches = false;
+          return request;
         }
       }
-
-      // Amount conditions matching
-      if (wf.conditions.minAmount !== undefined && wf.conditions.minAmount !== null) {
-        if (expense.convertedAmount >= wf.conditions.minAmount) {
-          score += 5;
-        } else {
-          matches = false;
-        }
-      }
-
-      if (wf.conditions.maxAmount !== undefined && wf.conditions.maxAmount !== null) {
-        if (expense.convertedAmount <= wf.conditions.maxAmount) {
-          score += 5;
-        } else {
-          matches = false;
-        }
-      }
-
-      // Default fallback match
-      if (wf.isDefault && score === 0) {
-        score = 1;
-      } else if (score === 0) {
-        matches = false;
-      }
-
-      if (matches && score > highestScore) {
-        highestScore = score;
-        matchedWorkflow = wf;
-      }
     }
 
-    if (!matchedWorkflow) {
-      // Auto-approve if no match found
-      await this.expenseRepo.update(expenseId, { status: ExpenseStatus.APPROVED });
-      return null;
-    }
-
-    // Create ApprovalRequest
-    const request = await this.requestRepo.create({
-      expense: expense._id,
-      workflow: matchedWorkflow as any,
-      currentStepNumber: 1,
-      status: ApprovalRequestStatus.PENDING,
-      history: [],
-      organization: tenantId as any,
-    });
-
-    // Notify first step approver(s)
-    const populatedExpense = await expense.populate('employee');
-    const firstStep = matchedWorkflow.steps.find((s) => s.stepNumber === 1);
-    if (firstStep) {
-      await this.notifyApprovers(firstStep, populatedExpense);
-    }
-
-    return request;
+    // Auto-approve if no project or no approval flow selected
+    await this.expenseRepo.update(expenseId, { status: ExpenseStatus.APPROVED });
+    return null;
   }
 
   // --- Action Processor ---

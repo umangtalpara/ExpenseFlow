@@ -24,6 +24,10 @@ interface ProjectItem {
   status: 'active' | 'inactive' | 'completed' | 'on-hold';
   projectManagers: UserOption[] | string[];
   employees: UserOption[] | string[];
+  approvalFlow?: {
+    _id: string;
+    name: string;
+  } | string;
 }
 
 export default function ProjectsPage() {
@@ -37,6 +41,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [workflows, setWorkflows] = useState<any[]>([]);
 
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -67,6 +72,7 @@ export default function ProjectsPage() {
     startDate: '',
     endDate: '',
     status: 'active',
+    approvalFlow: '',
   });
 
   useEffect(() => {
@@ -87,6 +93,7 @@ export default function ProjectsPage() {
     startDate: '',
     endDate: '',
     status: 'active' as any,
+    approvalFlow: '',
   });
 
   const openEditModal = (project: ProjectItem) => {
@@ -99,6 +106,7 @@ export default function ProjectsPage() {
       startDate: project.startDate ? project.startDate.split('T')[0] : '',
       endDate: project.endDate ? project.endDate.split('T')[0] : '',
       status: project.status,
+      approvalFlow: typeof project.approvalFlow === 'object' ? (project.approvalFlow as any)?._id : (project.approvalFlow || ''),
     });
     setEditModalOpen(true);
   };
@@ -120,6 +128,7 @@ export default function ProjectsPage() {
         startDate: editForm.startDate ? new Date(editForm.startDate).toISOString() : undefined,
         endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : undefined,
         status: editForm.status,
+        approvalFlow: editForm.approvalFlow || null,
       });
 
       setSuccess('Project updated successfully');
@@ -186,10 +195,20 @@ export default function ProjectsPage() {
     }
   };
 
+  const loadWorkflows = async () => {
+    try {
+      const response = await api.get('/approvals/workflows');
+      setWorkflows(response.data.filter((wf: any) => wf.status === 'active'));
+    } catch (err) {
+      console.error('Failed to load approval workflows', err);
+    }
+  };
+
   useEffect(() => {
     loadProjects();
     loadUsers();
     loadFilters();
+    loadWorkflows();
   }, []);
 
   const openDirectExpenseModal = (project: ProjectItem) => {
@@ -247,6 +266,7 @@ export default function ProjectsPage() {
         budget: Number(createForm.budget),
         startDate: createForm.startDate ? new Date(createForm.startDate).toISOString() : undefined,
         endDate: createForm.endDate ? new Date(createForm.endDate).toISOString() : undefined,
+        approvalFlow: createForm.approvalFlow || undefined,
       });
 
       setSuccess('Project created successfully');
@@ -261,6 +281,7 @@ export default function ProjectsPage() {
         startDate: '',
         endDate: '',
         status: 'active',
+        approvalFlow: '',
       });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create project');
@@ -394,6 +415,18 @@ export default function ProjectsPage() {
                 <div>
                   <h3 className="text-lg font-bold text-white tracking-tight">{project.name}</h3>
                   <p className="text-xs text-slate-500 font-mono tracking-wider uppercase">{project.code} • {project.client}</p>
+                  {(() => {
+                    const flowName = project.approvalFlow
+                      ? (typeof project.approvalFlow === 'object'
+                          ? (project.approvalFlow as any).name
+                          : (workflows.find((w) => w._id === project.approvalFlow)?.name || 'Configured Flow'))
+                      : 'Auto-Approve';
+                    return (
+                      <p className="text-[10px] text-cyan-400 mt-1.5 font-semibold bg-cyan-500/5 px-2 py-0.5 rounded border border-cyan-500/10 inline-block">
+                        Flow: {flowName}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
                   project.status === 'active'
@@ -526,13 +559,19 @@ export default function ProjectsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Currency</label>
-                  <input
-                    type="text"
-                    value={orgCurrency || 'USD'}
-                    disabled
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020]/50 px-4 py-2.5 text-sm text-slate-450 opacity-60 cursor-not-allowed"
-                  />
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Approval Flow (Optional)</label>
+                  <select
+                    value={createForm.approvalFlow}
+                    onChange={(e) => setCreateForm({ ...createForm, approvalFlow: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  >
+                    <option value="">No Approval Needed (Auto-Approve)</option>
+                    {workflows.map((wf) => (
+                      <option key={wf._id} value={wf._id}>
+                        {wf.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -923,6 +962,22 @@ export default function ProjectsPage() {
                     onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
                     className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Approval Flow (Optional)</label>
+                  <select
+                    value={editForm.approvalFlow}
+                    onChange={(e) => setEditForm({ ...editForm, approvalFlow: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  >
+                    <option value="">No Approval Needed (Auto-Approve)</option>
+                    {workflows.map((wf) => (
+                      <option key={wf._id} value={wf._id}>
+                        {wf.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

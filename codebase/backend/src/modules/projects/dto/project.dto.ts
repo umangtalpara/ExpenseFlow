@@ -34,6 +34,10 @@ export class CreateProjectDto {
   @IsEnum(ProjectStatus)
   @IsOptional()
   status?: ProjectStatus;
+
+  @IsString()
+  @IsOptional()
+  approvalFlow?: string;
 }
 
 export class UpdateProjectDto {
@@ -69,6 +73,10 @@ export class UpdateProjectDto {
   @IsEnum(ProjectStatus)
   @IsOptional()
   status?: ProjectStatus;
+
+  @IsString()
+  @IsOptional()
+  approvalFlow?: string;
 }
 
 export class AssignMembersDto {
