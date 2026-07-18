@@ -3,13 +3,15 @@ import { ProjectRepository } from './repositories/project.repository';
 import { UserRepository } from '../users/repositories/user.repository';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { getTenantId } from '../../common/tenant/tenant.context';
-import { Types } from 'mongoose';
+import { Types, Connection } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     private readonly projectRepository: ProjectRepository,
     private readonly userRepository: UserRepository,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async create(dto: CreateProjectDto) {
@@ -20,8 +22,7 @@ export class ProjectsService {
     }
 
     // Lock currency to organization currency
-    const mongoose = await import('mongoose');
-    const OrgModel = mongoose.model('Organization');
+    const OrgModel = this.connection.model('Organization');
     const org = await OrgModel.findById(tenantId).exec();
     const orgCurrency = org?.currency || 'USD';
     const projectCurrency = orgCurrency; // Locked!
@@ -44,13 +45,13 @@ export class ProjectsService {
     const start = dto.startDate ? new Date(dto.startDate) : new Date();
     const end = dto.endDate ? new Date(dto.endDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
-    const BudgetModel = mongoose.model('Budget');
+    const BudgetModel = this.connection.model('Budget');
     const orgBudget = await BudgetModel.findOne({
       scope: 'organization',
       status: 'active',
       startDate: { $lte: start },
       endDate: { $gte: end },
-      organization: new mongoose.Types.ObjectId(tenantId),
+      organization: new Types.ObjectId(tenantId),
     }).exec();
 
     if (!orgBudget) {
@@ -63,7 +64,7 @@ export class ProjectsService {
     const existingProjectBudgets = await BudgetModel.find({
       scope: 'project',
       status: 'active',
-      organization: new mongoose.Types.ObjectId(tenantId),
+      organization: new Types.ObjectId(tenantId),
       startDate: { $gte: orgBudget.startDate },
       endDate: { $lte: orgBudget.endDate },
     }).exec();
@@ -108,12 +109,11 @@ export class ProjectsService {
 
   private async getSpentAmount(projectId: string): Promise<number> {
     try {
-      const mongoose = await import('mongoose');
-      const ExpenseModel = mongoose.model('Expense');
+      const ExpenseModel = this.connection.model('Expense');
       const result = await ExpenseModel.aggregate([
         {
           $match: {
-            project: new mongoose.Types.ObjectId(projectId),
+            project: new Types.ObjectId(projectId),
             status: { $in: ['submitted', 'approved', 'reimbursed'] },
           },
         },
@@ -193,8 +193,7 @@ export class ProjectsService {
     if (dto.endDate) updateData.endDate = new Date(dto.endDate);
 
     if (dto.budget !== undefined && dto.budget !== null) {
-      const mongoose = await import('mongoose');
-      const BudgetModel = mongoose.model('Budget');
+      const BudgetModel = this.connection.model('Budget');
       const budgetDoc = await BudgetModel.findOne({
         scope: 'project',
         project: project._id,

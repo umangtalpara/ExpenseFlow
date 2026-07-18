@@ -11,6 +11,7 @@ import { RolesModule } from '../roles/roles.module';
 import { UsersModule } from '../users/users.module';
 import { MailModule } from '../mail/mail.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ProjectsModule } from '../projects/projects.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     UsersModule,
     MailModule,
     NotificationsModule,
+    ProjectsModule,
   ],
   providers: [ApprovalWorkflowRepository, ApprovalRequestRepository, ApprovalsService],
   controllers: [ApprovalsController],

@@ -12,6 +12,8 @@ import { Types } from 'mongoose';
 import { UserRepository } from '../users/repositories/user.repository';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RoleRepository } from '../roles/repositories/role.repository';
+import { ProjectRepository } from '../projects/repositories/project.repository';
 
 @Injectable()
 export class ApprovalsService {
@@ -22,6 +24,8 @@ export class ApprovalsService {
     private readonly userRepository: UserRepository,
     private readonly mailService: MailService,
     private readonly notificationsService: NotificationsService,
+    private readonly roleRepository: RoleRepository,
+    private readonly projectRepository: ProjectRepository,
   ) {}
 
   // --- Workflows CRUD ---
@@ -194,17 +198,14 @@ export class ApprovalsService {
     }
 
     // Additional check for Project Manager role: they can only approve projects they manage
-    const mongoose = await import('mongoose');
-    const RoleModel = mongoose.model('Role');
-    const roleDoc = await RoleModel.findById(userRoleId).exec();
+    const roleDoc = await this.roleRepository.findById(userRoleId);
     const roleName = roleDoc?.name || '';
     if (roleName === 'Project Manager') {
       const expense = await this.expenseRepo.findById(request.expense.toString());
       if (!expense || !expense.project) {
         throw new ForbiddenException('Project Manager cannot approve organization-level expenses');
       }
-      const ProjectModel = mongoose.model('Project');
-      const projDoc = await ProjectModel.findById(expense.project.toString()).exec();
+      const projDoc = await this.projectRepository.findById(expense.project.toString());
       if (!projDoc || !projDoc.projectManagers.some((pmId: any) => pmId.toString() === userId)) {
         throw new ForbiddenException('You are not authorized to approve expenses for this project');
       }
@@ -296,9 +297,7 @@ export class ApprovalsService {
 
     const inboxItems: any[] = [];
 
-    const mongoose = await import('mongoose');
-    const RoleModel = mongoose.model('Role');
-    const roleDoc = await RoleModel.findById(userRoleId).exec();
+    const roleDoc = await this.roleRepository.findById(userRoleId);
     const roleName = roleDoc?.name || '';
 
     for (const req of activeRequests) {
@@ -323,8 +322,7 @@ export class ApprovalsService {
             continue; // PMs cannot approve organization-level expenses
           }
 
-          const ProjectModel = mongoose.model('Project');
-          const projDoc = await ProjectModel.findById(expenseProj._id ? expenseProj._id : expenseProj).exec();
+          const projDoc = await this.projectRepository.findById(expenseProj._id ? expenseProj._id : expenseProj);
           if (!projDoc) {
             continue;
           }

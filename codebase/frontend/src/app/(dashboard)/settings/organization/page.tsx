@@ -138,61 +138,45 @@ function ProfileTab({ isAdmin }: { isAdmin: boolean }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-semibold text-slate-300">Organization Name</label>
-            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-              disabled={!isAdmin || saving} placeholder="Acme Corp" required
-              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50" />
+            <label className="block text-sm font-semibold text-slate-300">Organization Name <span className="text-slate-650 font-normal">(read-only)</span></label>
+            <input type="text" value={form.name} disabled placeholder="Acme Corp" required
+              className="mt-2 w-full rounded-lg border border-white/5 bg-[#070911] px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-300">Organization Slug <span className="text-slate-600 font-normal">(read-only)</span></label>
+            <label className="block text-sm font-semibold text-slate-300">Organization Slug <span className="text-slate-650 font-normal">(read-only)</span></label>
             <input type="text" value={form.slug} disabled
               className="mt-2 w-full rounded-lg border border-white/5 bg-[#070911] px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-300">Website URL</label>
+            <label className="block text-sm font-semibold text-slate-300">Website URL <span className="text-slate-650 font-normal">(read-only)</span></label>
             <div className="relative mt-2">
               <Globe className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-slate-500" />
-              <input type="url" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })}
-                disabled={!isAdmin || saving} placeholder="https://acme.com"
-                className="w-full rounded-lg border border-white/10 bg-white/5 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50" />
+              <input type="url" value={form.website} disabled placeholder="https://acme.com"
+                className="w-full rounded-lg border border-white/5 bg-[#070911] pl-10 pr-4 py-2.5 text-sm text-slate-500 cursor-not-allowed" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-300">Default Currency <span className="text-slate-500 font-normal">(read-only)</span></label>
-            <select value={form.currency} disabled
-              className="mt-2 w-full rounded-lg border border-white/5 bg-[#070911] px-4 py-2.5 text-sm text-slate-400 cursor-not-allowed">
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-              <option value="INR">INR (₹)</option>
-              <option value="CAD">CAD ($)</option>
-            </select>
-            <p className="mt-1.5 text-xs text-amber-500 font-medium">⚠️ Organization currency cannot be changed after creation.</p>
+            <label className="block text-sm font-semibold text-slate-300">Default Currency <span className="text-slate-650 font-normal">(read-only)</span></label>
+            <input
+              type="text"
+              value={form.currency || 'USD'}
+              disabled
+              className="mt-2 w-full rounded-lg border border-white/5 bg-[#070911] px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed"
+            />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm font-semibold text-slate-300">Office Address</label>
+            <label className="block text-sm font-semibold text-slate-300">Office Address <span className="text-slate-650 font-normal">(read-only)</span></label>
             <div className="relative mt-2">
               <MapPin className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-slate-500" />
-              <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
-                disabled={!isAdmin || saving} placeholder="123 Corporate Blvd, Suite 100"
-                className="w-full rounded-lg border border-white/10 bg-white/5 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50" />
+              <input type="text" value={form.address} disabled placeholder="123 Corporate Blvd, Suite 100"
+                className="w-full rounded-lg border border-white/5 bg-[#070911] pl-10 pr-4 py-2.5 text-sm text-slate-500 cursor-not-allowed" />
             </div>
           </div>
         </div>
 
-        {isAdmin ? (
-          <div className="flex justify-end pt-2">
-            <button type="submit" disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-all text-sm disabled:opacity-50 shadow-lg shadow-cyan-500/25">
-              <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Settings'}
-            </button>
-          </div>
-        ) : (
-          <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
-            You do not have administrative permissions to modify organization settings.
-          </div>
-        )}
+        <div className="p-4 rounded-lg bg-white/5 border border-white/10 text-slate-400 text-sm">
+          ℹ️ Organization settings profile cannot be edited.
+        </div>
       </form>
     </div>
   );

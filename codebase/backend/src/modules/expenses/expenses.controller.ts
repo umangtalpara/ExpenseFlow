@@ -4,6 +4,8 @@ import { StorageService } from './services/storage.service';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expense.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RoleRepository } from '../roles/repositories/role.repository';
+import { ProjectRepository } from '../projects/repositories/project.repository';
 
 @Controller('expenses')
 @UseGuards(JwtAuthGuard)
@@ -11,6 +13,8 @@ export class ExpensesController {
   constructor(
     private readonly expensesService: ExpensesService,
     private readonly storageService: StorageService,
+    private readonly roleRepository: RoleRepository,
+    private readonly projectRepository: ProjectRepository,
   ) {}
 
   @Post('upload')
@@ -49,9 +53,7 @@ export class ExpensesController {
     @Query('projectId') projectId?: string,
     @Query('status') status?: string
   ) {
-    const mongoose = await import('mongoose');
-    const RoleModel = mongoose.model('Role');
-    const roleDoc = await RoleModel.findById(req.user.role).exec();
+    const roleDoc = await this.roleRepository.findById(req.user.role);
     const roleName = roleDoc?.name || '';
 
     const isAdmin =
@@ -65,8 +67,7 @@ export class ExpensesController {
     if (projectId && !isAdmin) {
       if (isPM) {
         // Verify PM is assigned to this project
-        const ProjectModel = mongoose.model('Project');
-        const projDoc = await ProjectModel.findById(projectId).exec();
+        const projDoc = await this.projectRepository.findById(projectId);
         const isAssigned = projDoc?.projectManagers?.some(
           (pmId: any) => pmId.toString() === req.user.id
         );
@@ -75,8 +76,7 @@ export class ExpensesController {
         }
       } else {
         // Employee
-        const ProjectModel = mongoose.model('Project');
-        const projDoc = await ProjectModel.findById(projectId).exec();
+        const projDoc = await this.projectRepository.findById(projectId);
         const isAssigned = projDoc?.employees?.some(
           (empId: any) => empId.toString() === req.user.id
         );
@@ -91,10 +91,9 @@ export class ExpensesController {
 
     if (!isAdmin) {
       if (isPM) {
-        const ProjectModel = mongoose.model('Project');
-        const managedProjects = await ProjectModel.find({
-          projectManagers: new mongoose.Types.ObjectId(req.user.id),
-        }).exec();
+        const managedProjects = await this.projectRepository.find({
+          projectManagers: req.user.id,
+        });
         allowedProjectIds = managedProjects.map((p) => p._id.toString());
         // A PM should see their own submitted claims OR claims for projects they manage
         employeeId = req.user.id;
@@ -110,9 +109,7 @@ export class ExpensesController {
   @HttpCode(HttpStatus.OK)
   async findOne(@Request() req: any, @Param('id') id: string) {
     const expense = await this.expensesService.findOne(id);
-    const mongoose = await import('mongoose');
-    const RoleModel = mongoose.model('Role');
-    const roleDoc = await RoleModel.findById(req.user.role).exec();
+    const roleDoc = await this.roleRepository.findById(req.user.role);
     const roleName = roleDoc?.name || '';
     const isAdmin =
       roleName === 'Organization Admin' ||
@@ -125,8 +122,7 @@ export class ExpensesController {
     if ((expense.employee as any)._id.toString() !== req.user.id && !isAdmin) {
       if (isPM && expense.project) {
         // Verify PM is assigned to the expense project
-        const ProjectModel = mongoose.model('Project');
-        const projDoc = await ProjectModel.findById((expense.project as any)._id.toString()).exec();
+        const projDoc = await this.projectRepository.findById((expense.project as any)._id.toString());
         const isAssigned = projDoc?.projectManagers?.some(
           (pmId: any) => pmId.toString() === req.user.id
         );

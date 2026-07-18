@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { Trash2, Plus, RefreshCw, Briefcase, Building } from 'lucide-react';
+import { Trash2, Plus, RefreshCw, Briefcase, Building, Edit3, X } from 'lucide-react';
 
 interface Item {
   _id: string;
@@ -23,6 +23,38 @@ export default function DepartmentsDesignationsPage() {
   // Form State
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
+
+  // Edit State
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editCode, setEditCode] = useState('');
+
+  const openEditModal = (item: Item) => {
+    setEditingItem(item);
+    setEditName(item.name);
+    setEditCode(item.code);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !isAdmin) return;
+
+    setSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const endpoint = activeTab === 'departments' ? `/departments/${editingItem._id}` : `/designations/${editingItem._id}`;
+      const response = await api.put(endpoint, { name: editName, code: editCode.toUpperCase() });
+      setSuccess(`Updated successfully`);
+      setItems((prev) => prev.map((item) => (item._id === editingItem._id ? response.data : item)));
+      setEditingItem(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update entry');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const isAdmin = user?.role === 'Administrator' || user?.role === 'Organization Admin' || user?.role?.includes('Admin');
 
@@ -220,13 +252,22 @@ export default function DepartmentsDesignationsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-cyan-400 font-mono">{item.code}</td>
                       {isAdmin && (
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                          <button
-                            onClick={() => handleDelete(item._id)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => openEditModal(item)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-cyan-500/10 hover:text-cyan-400 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item._id)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -237,6 +278,63 @@ export default function DepartmentsDesignationsPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditingItem(null)} />
+          <div className="relative w-full max-w-md rounded-xl border border-white/5 bg-[#0b0f19] p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">
+                Edit {activeTab === 'departments' ? 'Department' : 'Designation'}
+              </h3>
+              <button onClick={() => setEditingItem(null)} className="text-slate-500 hover:text-slate-300">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  disabled={submitting}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Code</label>
+                <input
+                  type="text"
+                  value={editCode}
+                  onChange={(e) => setEditCode(e.target.value)}
+                  disabled={submitting}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 uppercase"
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                >
+                  {submitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { PaymentMethodStatus } from '../payment-methods/schemas/payment-method.s
 import { BudgetScope, BudgetStatus } from '../budgets/schemas/budget.schema';
 import { getTenantId } from '../../common/tenant/tenant.context';
 import { Types } from 'mongoose';
+import { RoleRepository } from '../roles/repositories/role.repository';
 
 @Injectable()
 export class ExpensesService {
@@ -29,6 +30,7 @@ export class ExpensesService {
     private readonly exchangeAdapter: CurrencyExchangeAdapter,
     @Inject(forwardRef(() => ApprovalsService))
     private readonly approvalsService: ApprovalsService,
+    private readonly roleRepository: RoleRepository,
   ) {}
 
   async create(userId: string, dto: CreateExpenseDto) {
@@ -139,9 +141,7 @@ export class ExpensesService {
       throw new NotFoundException('Expense claim not found');
     }
 
-    const mongoose = await import('mongoose');
-    const RoleModel = mongoose.model('Role');
-    const roleDoc = await RoleModel.findById(userRole).exec();
+    const roleDoc = await this.roleRepository.findById(userRole);
     const roleName = roleDoc?.name || '';
     const isAdmin = roleName === 'Organization Admin' || roleName === 'Administrator' || roleName.includes('Admin');
 

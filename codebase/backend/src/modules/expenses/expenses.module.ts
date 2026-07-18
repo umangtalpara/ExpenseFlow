@@ -11,6 +11,7 @@ import { ProjectsModule } from '../projects/projects.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { BudgetsModule } from '../budgets/budgets.module';
 import { ApprovalsModule } from '../approvals/approvals.module';
+import { RolesModule } from '../roles/roles.module';
 
 import { StorageService } from './services/storage.service';
 
@@ -25,6 +26,7 @@ import { StorageService } from './services/storage.service';
     OrganizationsModule,
     BudgetsModule,
     forwardRef(() => ApprovalsModule),
+    RolesModule,
   ],
   providers: [ExpenseRepository, CurrencyExchangeAdapter, ExpensesService, StorageService],
   controllers: [ExpensesController],

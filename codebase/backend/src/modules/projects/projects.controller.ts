@@ -4,11 +4,15 @@ import { CreateProjectDto, UpdateProjectDto, AssignMembersDto, AssignManagersDto
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RbacGuard } from '../../common/guards/rbac.guard';
 import { RequiredPermissions } from '../../common/decorators/permissions.decorator';
+import { RoleRepository } from '../roles/repositories/role.repository';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly roleRepository: RoleRepository,
+  ) {}
 
   @Post()
   @UseGuards(RbacGuard)
@@ -21,9 +25,7 @@ export class ProjectsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async findAll(@Req() req: any) {
-    const mongoose = await import('mongoose');
-    const RoleModel = mongoose.model('Role');
-    const roleDoc = await RoleModel.findById(req.user.role).exec();
+    const roleDoc = await this.roleRepository.findById(req.user.role);
     const roleName = roleDoc?.name || '';
     const isAdmin = roleName === 'Organization Admin' || roleName === 'Administrator' || roleName.includes('Admin');
 
@@ -45,9 +47,7 @@ export class ProjectsController {
   async findOne(@Req() req: any, @Param('id') id: string) {
     const project = await this.projectsService.findOne(id);
 
-    const mongoose = await import('mongoose');
-    const RoleModel = mongoose.model('Role');
-    const roleDoc = await RoleModel.findById(req.user.role).exec();
+    const roleDoc = await this.roleRepository.findById(req.user.role);
     const roleName = roleDoc?.name || '';
     const isAdmin = roleName === 'Organization Admin' || roleName === 'Administrator' || roleName.includes('Admin');
 
