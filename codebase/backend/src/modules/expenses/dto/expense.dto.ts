@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, IsOptional, IsDateString, IsEnum, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsOptional, IsDateString, IsEnum, Min, IsArray } from 'class-validator';
 import { ExpenseStatus } from '../schemas/expense.schema';
 
 export class CreateExpenseDto {
@@ -55,6 +55,14 @@ export class CreateExpenseDto {
   @IsString()
   @IsOptional()
   employee?: string;
+
+  @IsOptional()
+  requestReimbursement?: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  receiptUrls?: string[];
 }
 
 export class UpdateExpenseDto {
@@ -107,4 +115,12 @@ export class UpdateExpenseDto {
   @IsEnum(ExpenseStatus)
   @IsOptional()
   status?: ExpenseStatus;
+
+  @IsOptional()
+  requestReimbursement?: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  receiptUrls?: string[];
 }

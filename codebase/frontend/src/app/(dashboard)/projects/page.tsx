@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgStore } from '@/store/org.store';
-import { FolderPlus, Users, Calendar, DollarSign, RefreshCw, X, ShieldAlert, Check, Plus, AlertTriangle } from 'lucide-react';
+import { FolderPlus, Users, Calendar, DollarSign, RefreshCw, X, ShieldAlert, Check, Plus, AlertTriangle, Edit } from 'lucide-react';
 
 interface UserOption {
   _id: string;
@@ -76,6 +76,61 @@ export default function ProjectsPage() {
   }, [orgCurrency]);
 
   const [createSubmitting, setCreateSubmitting] = useState(false);
+
+  // Edit Project States
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    code: '',
+    client: '',
+    budget: 0,
+    startDate: '',
+    endDate: '',
+    status: 'active' as any,
+  });
+
+  const openEditModal = (project: ProjectItem) => {
+    setSelectedProject(project);
+    setEditForm({
+      name: project.name,
+      code: project.code,
+      client: project.client,
+      budget: project.budget,
+      startDate: project.startDate ? project.startDate.split('T')[0] : '',
+      endDate: project.endDate ? project.endDate.split('T')[0] : '',
+      status: project.status,
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProject || !isAdmin) return;
+
+    setCreateSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await api.put(`/projects/${selectedProject._id}`, {
+        name: editForm.name,
+        code: editForm.code,
+        client: editForm.client,
+        budget: Number(editForm.budget),
+        startDate: editForm.startDate ? new Date(editForm.startDate).toISOString() : undefined,
+        endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : undefined,
+        status: editForm.status,
+      });
+
+      setSuccess('Project updated successfully');
+      setEditModalOpen(false);
+      loadProjects();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update project');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
 
   // Members selection form
   const [selectedManagers, setSelectedManagers] = useState<string[]>([]);
@@ -363,15 +418,14 @@ export default function ProjectsPage() {
                   const spent = (project as any).spent || 0;
                   const budget = project.budget || 1;
                   const spentPct = Math.min(100, Math.round((spent / budget) * 100));
-                  const remainingPct = Math.max(0, 100 - spentPct);
                   return (
                     <>
                       <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
                         <div className="bg-cyan-500 h-full" style={{ width: `${spentPct}%` }} />
                       </div>
-                      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                        <span>{spentPct}% Spent</span>
-                        <span>{remainingPct}% Remaining</span>
+                      <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-semibold">
+                        <span>Spent: {spent.toLocaleString(undefined, { style: 'currency', currency: project.currency })}</span>
+                        <span>Remaining: {Math.max(0, budget - spent).toLocaleString(undefined, { style: 'currency', currency: project.currency })}</span>
                       </div>
                     </>
                   );
@@ -393,6 +447,13 @@ export default function ProjectsPage() {
               {/* Actions */}
               {isAdmin && (
                 <div className="pt-3 border-t border-white/5 flex gap-2 justify-end">
+                  <button
+                    onClick={() => openEditModal(project)}
+                    className="flex items-center text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/10 transition-all duration-200"
+                  >
+                    <Edit className="mr-1 h-3.5 w-3.5" />
+                    Edit
+                  </button>
                   <button
                     onClick={() => openMembersModal(project)}
                     className="flex items-center text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/5 px-2.5 py-1.5 rounded-lg border border-cyan-500/25 transition-all duration-200"
@@ -466,16 +527,12 @@ export default function ProjectsPage() {
 
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Currency</label>
-                  <select
-                    value={createForm.currency}
-                    onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="INR">INR (₹)</option>
-                  </select>
+                  <input
+                    type="text"
+                    value={orgCurrency || 'USD'}
+                    disabled
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020]/50 px-4 py-2.5 text-sm text-slate-450 opacity-60 cursor-not-allowed"
+                  />
                 </div>
 
                 <div>
@@ -766,6 +823,123 @@ export default function ProjectsPage() {
                   className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold transition-colors text-sm"
                 >
                   {directExpenseSubmitting ? 'Logging...' : 'Log & Approve Expense'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditModalOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-xl border border-white/5 bg-[#0b0f19] p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">Edit Project</h3>
+              <button onClick={() => setEditModalOpen(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Project Name</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Acme Redesign"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Project Code</label>
+                  <input
+                    type="text"
+                    value={editForm.code}
+                    onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
+                    placeholder="ACME-RED"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none uppercase"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Client Name</label>
+                  <input
+                    type="text"
+                    value={editForm.client}
+                    onChange={(e) => setEditForm({ ...editForm, client: e.target.value })}
+                    placeholder="Acme Industries"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Budget</label>
+                  <input
+                    type="number"
+                    value={editForm.budget}
+                    onChange={(e) => setEditForm({ ...editForm, budget: Number(e.target.value) })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Project Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="completed">Completed</option>
+                    <option value="on-hold">On-hold</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Start Date</label>
+                  <input
+                    type="date"
+                    value={editForm.startDate}
+                    onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">End Date</label>
+                  <input
+                    type="date"
+                    value={editForm.endDate}
+                    onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createSubmitting}
+                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                >
+                  {createSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

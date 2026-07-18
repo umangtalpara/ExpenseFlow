@@ -10,6 +10,7 @@ import { UserStatus } from '../users/schemas/user.schema';
 import { runWithTenant } from '../../common/tenant/tenant.context';
 import { CreateInvitationDto, AcceptInvitationDto } from './dto/invitation.dto';
 import { AuthService } from '../auth/auth.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class InvitationService {
@@ -19,6 +20,7 @@ export class InvitationService {
     private readonly roleRepository: RoleRepository,
     private readonly organizationRepository: OrganizationRepository,
     private readonly authService: AuthService,
+    private readonly mailService: MailService,
   ) {}
 
   async createInvitation(dto: CreateInvitationDto, adminOrgId: string) {
@@ -67,6 +69,21 @@ export class InvitationService {
         }
       });
     });
+
+    // Fetch inviting organization's details to send onboarding email
+    const org = await this.organizationRepository.findOne({ _id: adminOrgId });
+    const orgName = org?.name || 'Organization';
+
+    try {
+      await this.mailService.sendInvitationMail(
+        dto.email,
+        token,
+        orgName,
+        role.name,
+      );
+    } catch (err) {
+      console.error('Failed to send invitation email', err);
+    }
 
     console.log(`[INVITATION] Sent invite to ${dto.email}: /accept-invite?token=${token}`);
     return {

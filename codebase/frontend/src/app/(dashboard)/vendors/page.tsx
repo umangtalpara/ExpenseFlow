@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import { UserPlus, ShieldAlert, Phone, Mail, FileText, Landmark, RefreshCw, X, Check, Building } from 'lucide-react';
+import { UserPlus, ShieldAlert, Phone, Mail, FileText, Landmark, RefreshCw, X, Check, Building, Edit } from 'lucide-react';
 
 interface ProjectOption {
   _id: string;
@@ -53,6 +53,66 @@ export default function VendorsPage() {
     status: 'active',
   });
   const [createSubmitting, setCreateSubmitting] = useState(false);
+
+  // Edit Vendor States
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    company: '',
+    gstPan: '',
+    contactEmail: '',
+    contactPhone: '',
+    bankName: '',
+    bankAccount: '',
+    bankIfsc: '',
+    status: 'active' as any,
+  });
+
+  const openEditModal = (vendor: VendorItem) => {
+    setSelectedVendor(vendor);
+    setEditForm({
+      name: vendor.name,
+      company: vendor.company,
+      gstPan: vendor.gstPan || '',
+      contactEmail: vendor.contactEmail || '',
+      contactPhone: vendor.contactPhone || '',
+      bankName: vendor.bankName || '',
+      bankAccount: vendor.bankAccount || '',
+      bankIfsc: vendor.bankIfsc || '',
+      status: vendor.status,
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedVendor || !isAdmin) return;
+
+    setCreateSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await api.put(`/vendors/${selectedVendor._id}`, editForm);
+      setSuccess('Vendor updated successfully');
+      setEditModalOpen(false);
+      loadVendors();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update vendor');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
+  const isFinance = currentUser?.role === 'Finance' || currentUser?.role?.includes('Finance');
+  const showFullAccount = isAdmin || isFinance;
+
+  const formatBankAccount = (account: string | undefined) => {
+    if (!account) return 'N/A';
+    if (showFullAccount) return account;
+    if (account.length <= 4) return account;
+    return '*'.repeat(account.length - 4) + account.slice(-4);
+  };
 
   // Project linkage state
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
@@ -256,8 +316,8 @@ export default function VendorsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Landmark className="h-4 w-4 text-slate-500 flex-shrink-0" />
-                  <span className="truncate" title={`${vendor.bankName} - ${vendor.bankAccount}`}>
-                    {vendor.bankName ? `${vendor.bankName} (${vendor.bankIfsc})` : 'No Bank Coordinates'}
+                  <span className="truncate" title={vendor.bankName ? `${vendor.bankName} - A/C: ${formatBankAccount(vendor.bankAccount)}` : ''}>
+                    {vendor.bankName ? `${vendor.bankName} (${formatBankAccount(vendor.bankAccount)})` : 'No Bank Coordinates'}
                   </span>
                 </div>
               </div>
@@ -283,10 +343,17 @@ export default function VendorsPage() {
 
               {/* Actions */}
               {isAdmin && (
-                <div className="pt-3 border-t border-white/5 flex justify-end">
+                <div className="pt-3 border-t border-white/5 flex gap-2 justify-end">
+                  <button
+                    onClick={() => openEditModal(vendor)}
+                    className="flex items-center text-xs font-semibold text-slate-350 hover:text-white hover:bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/10 transition-all duration-200"
+                  >
+                    <Edit className="mr-1 h-3.5 w-3.5" />
+                    Edit Details
+                  </button>
                   <button
                     onClick={() => openLinkModal(vendor)}
-                    className="flex items-center text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/5 px-3 py-1.5 rounded-lg border border-cyan-500/25 transition-all duration-200"
+                    className="flex items-center text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/5 px-2.5 py-1.5 rounded-lg border border-cyan-500/25 transition-all duration-200"
                   >
                     <Building className="mr-1.5 h-3.5 w-3.5" />
                     Link Projects
@@ -477,6 +544,144 @@ export default function VendorsPage() {
                   className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
                 >
                   {linkSubmitting ? 'Linking...' : 'Save Mappings'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Vendor Modal */}
+      {editModalOpen && selectedVendor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditModalOpen(false)} />
+          <div className="relative w-full max-w-lg rounded-xl border border-white/5 bg-[#0b0f19] p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white">Edit Vendor Profile</h3>
+              <button onClick={() => setEditModalOpen(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Vendor Name</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Uber Inc"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Company Name</label>
+                  <input
+                    type="text"
+                    value={editForm.company}
+                    onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
+                    placeholder="Uber Technologies Inc"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">GST / PAN ID</label>
+                  <input
+                    type="text"
+                    value={editForm.gstPan}
+                    onChange={(e) => setEditForm({ ...editForm, gstPan: e.target.value })}
+                    placeholder="22AAAAA0000A1Z5"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Contact Email</label>
+                  <input
+                    type="email"
+                    value={editForm.contactEmail}
+                    onChange={(e) => setEditForm({ ...editForm, contactEmail: e.target.value })}
+                    placeholder="billing@uber.com"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Contact Phone</label>
+                  <input
+                    type="text"
+                    value={editForm.contactPhone}
+                    onChange={(e) => setEditForm({ ...editForm, contactPhone: e.target.value })}
+                    placeholder="+1 555 0199"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Vendor Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Bank Name</label>
+                  <input
+                    type="text"
+                    value={editForm.bankName}
+                    onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })}
+                    placeholder="Sovereign Bank"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Bank Account No</label>
+                  <input
+                    type="text"
+                    value={editForm.bankAccount}
+                    onChange={(e) => setEditForm({ ...editForm, bankAccount: e.target.value })}
+                    placeholder="9988776655"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Bank IFSC / SWIFT</label>
+                  <input
+                    type="text"
+                    value={editForm.bankIfsc}
+                    onChange={(e) => setEditForm({ ...editForm, bankIfsc: e.target.value })}
+                    placeholder="SOV0001"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createSubmitting}
+                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                >
+                  {createSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

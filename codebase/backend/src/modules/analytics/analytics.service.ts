@@ -42,7 +42,7 @@ export class AnalyticsService {
     if (isPM) {
       // Find projects managed by this user
       const managedProjects = await this.projectModel
-        .find({ organization: new Types.ObjectId(tenantId), managers: new Types.ObjectId(userId) })
+        .find({ organization: new Types.ObjectId(tenantId), projectManagers: new Types.ObjectId(userId) })
         .exec();
       projectIdsFilter = managedProjects.map((p) => p._id as Types.ObjectId);
     }

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgStore } from '@/store/org.store';
-import { FilePlus, FileText, Trash2, RefreshCw, X, Receipt, Upload, Check, ChevronRight, ChevronLeft, AlertTriangle } from 'lucide-react';
+import { FilePlus, FileText, Trash2, RefreshCw, X, Receipt, Upload, Check, ChevronRight, ChevronLeft, AlertTriangle, Edit, ZoomIn, ZoomOut, RotateCw, Eye, EyeOff } from 'lucide-react';
 
 interface CategoryOption {
   _id: string;
@@ -35,6 +35,8 @@ interface ExpenseClaimItem {
   vendor?: string;
   description?: string;
   receiptUrl?: string;
+  receiptUrls?: string[];
+  requestReimbursement?: boolean;
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'reimbursed';
 }
 
@@ -44,7 +46,7 @@ export default function ClaimsPage() {
   const [claims, setClaims] = useState<ExpenseClaimItem[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<DropdownOption[]>([]);
-  const [projects, setProjects] = useState<DropdownOption[]>([]);
+  const [projects, setProjects] = useState<(DropdownOption & { budget?: number; spent?: number })[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -71,7 +73,20 @@ export default function ClaimsPage() {
     description: '',
     receiptFile: null as File | null,
     receiptUrl: '',
+    requestReimbursement: false,
+    receiptUrls: [] as string[],
   });
+
+  const [allVendors, setAllVendors] = useState<any[]>([]);
+  const [editingClaimId, setEditingClaimId] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+  const [vendorSearch, setVendorSearch] = useState('');
+
+  // Lightbox Preview States
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [rotationAngle, setRotationAngle] = useState(0);
 
   useEffect(() => {
     if (orgCurrency) {
@@ -85,16 +100,18 @@ export default function ClaimsPage() {
     setLoading(true);
     setError('');
     try {
-      const [claimsRes, catRes, pmRes, projRes] = await Promise.all([
+      const [claimsRes, catRes, pmRes, projRes, vendorRes] = await Promise.all([
         api.get('/expenses'),
         api.get('/categories'),
         api.get('/payment-methods'),
         api.get('/projects'),
+        api.get('/vendors'),
       ]);
       setClaims(claimsRes.data);
       setCategories(catRes.data.filter((c: any) => c.status === 'active'));
       setPaymentMethods(pmRes.data.filter((p: any) => p.status === 'active'));
       setProjects(projRes.data.filter((p: any) => p.status === 'active'));
+      setAllVendors(vendorRes.data.filter((v: any) => v.status === 'active'));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load expense claims data');
     } finally {
@@ -115,7 +132,7 @@ export default function ClaimsPage() {
     // Pre-submit validation for Category Rules
     const selectedCategory = categories.find((c) => c._id === createForm.category);
     if (selectedCategory) {
-      if (status === 'submitted' && selectedCategory.requireReceipt && !createForm.receiptUrl) {
+      if (status === 'submitted' && selectedCategory.requireReceipt && !createForm.receiptUrl && createForm.receiptUrls.length === 0) {
         setError(`A receipt upload is mandatory for category "${selectedCategory.name}"`);
         setCreateSubmitting(false);
         return;
@@ -140,6 +157,8 @@ export default function ClaimsPage() {
         vendor: createForm.vendor || undefined,
         description: createForm.description || undefined,
         receiptUrl: createForm.receiptUrl || undefined,
+        receiptUrls: createForm.receiptUrls,
+        requestReimbursement: createForm.requestReimbursement,
         status,
       });
 
@@ -152,6 +171,83 @@ export default function ClaimsPage() {
     } finally {
       setCreateSubmitting(false);
     }
+  };
+
+  const handleUpdateSubmit = async (e: React.FormEvent, status: 'draft' | 'submitted') => {
+    e.preventDefault();
+    if (!editingClaimId) return;
+    setCreateSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    const selectedCategory = categories.find((c) => c._id === createForm.category);
+    if (selectedCategory) {
+      if (status === 'submitted' && selectedCategory.requireReceipt && !createForm.receiptUrl && createForm.receiptUrls.length === 0) {
+        setError(`A receipt upload is mandatory for category "${selectedCategory.name}"`);
+        setCreateSubmitting(false);
+        return;
+      }
+      if (selectedCategory.maxLimit && createForm.amount > selectedCategory.maxLimit && createForm.currency === orgCurrency) {
+        setError(`This expense exceeds the category limit of ${selectedCategory.maxLimit} ${orgCurrency}`);
+        setCreateSubmitting(false);
+        return;
+      }
+    }
+
+    try {
+      await api.put(`/expenses/${editingClaimId}`, {
+        amount: Number(createForm.amount),
+        currency: createForm.currency,
+        date: new Date(createForm.date).toISOString(),
+        category: createForm.category,
+        paymentMethod: createForm.paymentMethod,
+        project: createForm.project || undefined,
+        merchant: createForm.merchant,
+        gst: createForm.gst ? Number(createForm.gst) : undefined,
+        vendor: createForm.vendor || undefined,
+        description: createForm.description || undefined,
+        receiptUrl: createForm.receiptUrl || undefined,
+        receiptUrls: createForm.receiptUrls,
+        requestReimbursement: createForm.requestReimbursement,
+        status,
+      });
+
+      setSuccess('Expense claim updated successfully');
+      setCreateModalOpen(false);
+      resetForm();
+      loadData();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update expense claim');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
+  const openEditModal = (claim: any) => {
+    setEditingClaimId(claim._id);
+    setCreateForm({
+      amount: claim.amount,
+      currency: claim.currency,
+      date: new Date(claim.date).toISOString().split('T')[0],
+      category: claim.category?._id || claim.category || '',
+      paymentMethod: claim.paymentMethod?._id || claim.paymentMethod || '',
+      project: claim.project?._id || claim.project || '',
+      merchant: claim.merchant,
+      gst: claim.gst || 0,
+      vendor: claim.vendor?._id || claim.vendor || '',
+      description: claim.description || '',
+      receiptFile: null,
+      receiptUrl: claim.receiptUrl || '',
+      requestReimbursement: claim.requestReimbursement || false,
+      receiptUrls: claim.receiptUrls || (claim.receiptUrl ? [claim.receiptUrl] : []),
+    });
+    setVendorSearch('');
+    const matchedVendor = allVendors.find((v) => v._id === claim.vendor);
+    if (matchedVendor) {
+      setVendorSearch(matchedVendor.name);
+    }
+    setCreateModalOpen(true);
+    setCurrentStep(1);
   };
 
   const resetForm = () => {
@@ -168,7 +264,11 @@ export default function ClaimsPage() {
       description: '',
       receiptFile: null,
       receiptUrl: '',
+      requestReimbursement: false,
+      receiptUrls: [],
     });
+    setEditingClaimId(null);
+    setVendorSearch('');
     setCurrentStep(1);
   };
 
@@ -184,11 +284,14 @@ export default function ClaimsPage() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setCreateForm((prev) => ({
-        ...prev,
-        receiptFile: file,
-        receiptUrl: res.data.url,
-      }));
+      setCreateForm((prev) => {
+        const newUrls = [...prev.receiptUrls, res.data.url];
+        return {
+          ...prev,
+          receiptUrls: newUrls,
+          receiptUrl: newUrls[0] || '',
+        };
+      });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to upload receipt file');
     }
@@ -385,16 +488,35 @@ export default function ClaimsPage() {
                       )}
                     </td>
                     <td className="p-4">
-                      {claim.receiptUrl ? (
-                        <a
-                          href={claim.receiptUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-cyan-400 hover:text-cyan-300 underline gap-1"
+                      {claim.receiptUrls && claim.receiptUrls.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {claim.receiptUrls.map((url: string, idx: number) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setPreviewUrl(url);
+                                setZoomScale(1);
+                                setRotationAngle(0);
+                              }}
+                              className="flex items-center text-cyan-400 hover:text-cyan-300 underline gap-1 font-semibold text-left"
+                            >
+                              <Receipt className="h-3 w-3" />
+                              Receipt {idx + 1}
+                            </button>
+                          ))}
+                        </div>
+                      ) : claim.receiptUrl ? (
+                        <button
+                          onClick={() => {
+                            setPreviewUrl(claim.receiptUrl || null);
+                            setZoomScale(1);
+                            setRotationAngle(0);
+                          }}
+                          className="flex items-center text-cyan-400 hover:text-cyan-300 underline gap-1 font-semibold text-left"
                         >
                           <Receipt className="h-3 w-3" />
                           View
-                        </a>
+                        </button>
                       ) : (
                         <span className="text-slate-600">No Attachment</span>
                       )}
@@ -413,14 +535,25 @@ export default function ClaimsPage() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      {claim.status === 'draft' && (
-                        <div className="flex gap-2 justify-end">
+                      <div className="flex gap-2 justify-end">
+                        {claim.status === 'draft' && (
                           <button
                             onClick={() => handleSubmitDraft(claim._id)}
                             className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-[10px] font-bold"
                           >
                             Submit
                           </button>
+                        )}
+                        {(claim.status === 'draft' || claim.status === 'submitted') && (
+                          <button
+                            onClick={() => openEditModal(claim)}
+                            className="p-1 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20"
+                            title="Edit Claim"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {claim.status === 'draft' && (
                           <button
                             onClick={() => handleDeleteDraft(claim._id)}
                             className="p-1 rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20"
@@ -428,8 +561,8 @@ export default function ClaimsPage() {
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -501,15 +634,54 @@ export default function ClaimsPage() {
                         required
                       />
                     </div>
-                    <div>
+                    <div className="relative">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Vendor (Optional)</label>
                       <input
                         type="text"
-                        value={createForm.vendor}
-                        onChange={(e) => setCreateForm({ ...createForm, vendor: e.target.value })}
-                        placeholder="Uber Technologies Inc"
-                        className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                        placeholder="Search Vendor..."
+                        value={vendorSearch}
+                        onChange={(e) => {
+                          setVendorSearch(e.target.value);
+                          setShowVendorDropdown(true);
+                        }}
+                        onFocus={() => setShowVendorDropdown(true)}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                       />
+                      {showVendorDropdown && (
+                        <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-lg">
+                          <div
+                            onClick={() => {
+                              setCreateForm({ ...createForm, vendor: '' });
+                              setVendorSearch('');
+                              setShowVendorDropdown(false);
+                            }}
+                            className="cursor-pointer rounded p-2 text-xs text-slate-400 hover:bg-slate-800 hover:text-white"
+                          >
+                            None (Clear Selection)
+                          </div>
+                          {allVendors
+                            .filter((v) => {
+                              if (vendorSearch && !v.name.toLowerCase().includes(vendorSearch.toLowerCase())) {
+                                return false;
+                              }
+                              if (!createForm.project) return true;
+                              return !v.projects || v.projects.length === 0 || v.projects.some((p: any) => (p._id || p).toString() === createForm.project);
+                            })
+                            .map((v) => (
+                              <div
+                                key={v._id}
+                                onClick={() => {
+                                  setCreateForm({ ...createForm, vendor: v._id });
+                                  setVendorSearch(v.name);
+                                  setShowVendorDropdown(false);
+                                }}
+                                className="cursor-pointer rounded p-2 text-xs text-white hover:bg-slate-800"
+                              >
+                                {v.name}
+                              </div>
+                            ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">GST (Optional)</label>
@@ -520,6 +692,18 @@ export default function ClaimsPage() {
                         placeholder="12.00"
                         className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"
                       />
+                    </div>
+                    <div className="col-span-2 flex items-center space-x-2 pt-3">
+                      <input
+                        type="checkbox"
+                        id="requestReimbursement"
+                        checked={createForm.requestReimbursement}
+                        onChange={(e) => setCreateForm({ ...createForm, requestReimbursement: e.target.checked })}
+                        className="h-4 w-4 rounded border-white/10 bg-white/5 text-cyan-500 focus:ring-cyan-500"
+                      />
+                      <label htmlFor="requestReimbursement" className="text-xs font-semibold text-slate-300">
+                        Request Reimbursement
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -567,7 +751,10 @@ export default function ClaimsPage() {
                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Link Project (Optional)</label>
                     <select
                       value={createForm.project}
-                      onChange={(e) => setCreateForm({ ...createForm, project: e.target.value })}
+                      onChange={(e) => {
+                        setCreateForm({ ...createForm, project: e.target.value, vendor: '' });
+                        setVendorSearch('');
+                      }}
                       className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
                     >
                       <option value="">No Project Linkage</option>
@@ -578,6 +765,34 @@ export default function ClaimsPage() {
                       ))}
                     </select>
                   </div>
+
+                  {createForm.project && createForm.amount > 0 && (
+                    (() => {
+                      const proj = projects.find((p) => p._id === createForm.project);
+                      if (!proj) return null;
+                      const budget = proj.budget || 0;
+                      const spent = proj.spent || 0;
+                      const remaining = budget - spent;
+                      if (remaining <= 0) {
+                        return (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex gap-2 items-center">
+                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                            <span>Warning: This project has fully consumed its budget ({orgCurrency} {budget.toLocaleString()} / {orgCurrency} {spent.toLocaleString()} spent).</span>
+                          </div>
+                        );
+                      }
+                      const percentConsumed = (createForm.amount / remaining) * 100;
+                      if (percentConsumed >= 80) {
+                        return (
+                          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold flex gap-2 items-center">
+                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                            <span>Warning: This claim will consume {percentConsumed.toFixed(1)}% of remaining project budget ({orgCurrency} {remaining.toLocaleString()} left).</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()
+                  )}
 
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Description</label>
@@ -606,7 +821,7 @@ export default function ClaimsPage() {
               {/* STEP 3: Receipt Attachment & Drag & Drop */}
               {currentStep === 3 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-200">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Receipt Attachment</label>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Receipt Attachments</label>
                   
                   <div
                     onDragOver={handleDragOver}
@@ -615,36 +830,62 @@ export default function ClaimsPage() {
                     className={`mt-2 border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer relative transition-all duration-200 ${
                       isDragOver
                         ? 'border-cyan-500 bg-cyan-500/5'
-                        : createForm.receiptFile
+                        : createForm.receiptUrls.length > 0
                         ? 'border-emerald-500/40 bg-emerald-500/5'
                         : 'border-white/10 hover:border-white/20 bg-white/5'
                     }`}
                   >
                     <input
                       type="file"
-                      onChange={handleFileChange}
+                      multiple
+                      onChange={async (e) => {
+                        if (e.target.files) {
+                          for (let i = 0; i < e.target.files.length; i++) {
+                            await handleFileUpload(e.target.files[i]);
+                          }
+                        }
+                      }}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                     
-                    {createForm.receiptFile ? (
-                      <div className="flex flex-col items-center gap-2 text-xs text-slate-300 font-semibold">
-                        <Check className="h-6 w-6 text-emerald-400" />
-                        <span>{createForm.receiptFile.name} (Successfully Uploaded)</span>
-                        <span className="text-[10px] text-slate-500 font-mono select-all mt-1">{createForm.receiptUrl}</span>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="h-8 w-8 text-slate-500 mb-2" />
-                        <span className="text-xs text-slate-400 font-semibold">Drag and drop file here, or click to upload</span>
-                        <span className="text-[10px] text-slate-500 block mt-0.5">Supports PDF, PNG, JPG</span>
-                      </>
-                    )}
+                    <Upload className="h-8 w-8 text-slate-500 mb-2" />
+                    <span className="text-xs text-slate-400 font-semibold">Drag and drop files here, or click to upload</span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Supports PDF, PNG, JPG (Multiple Uploads Allowed)</span>
                   </div>
 
-                  {selectedCategoryObj?.requireReceipt && !createForm.receiptUrl && (
+                  {createForm.receiptUrls && createForm.receiptUrls.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Uploaded Files ({createForm.receiptUrls.length})</span>
+                      <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+                        {createForm.receiptUrls.map((url, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-white/5 text-xs text-slate-300">
+                            <span className="truncate max-w-[280px] font-mono">{url.split('/').pop()}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCreateForm(prev => {
+                                  const updatedUrls = prev.receiptUrls.filter((_, i) => i !== idx);
+                                  return {
+                                    ...prev,
+                                    receiptUrls: updatedUrls,
+                                    receiptUrl: updatedUrls[0] || '',
+                                  };
+                                });
+                              }}
+                              className="text-red-400 hover:text-red-350 p-1"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedCategoryObj?.requireReceipt && createForm.receiptUrls.length === 0 && (
                     <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex gap-2 items-center">
                       <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span>Submission requires a receipt attachment for this category.</span>
+                      <span>Submission requires at least one receipt attachment for this category.</span>
                     </div>
                   )}
                 </div>
@@ -678,7 +919,6 @@ export default function ClaimsPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        // Validate basic inputs before moving forward
                         if (currentStep === 1 && (!createForm.merchant || !createForm.amount)) {
                           setError('Merchant name and Amount are required');
                           return;
@@ -695,7 +935,7 @@ export default function ClaimsPage() {
                     <>
                       <button
                         type="button"
-                        onClick={(e) => handleCreateSubmit(e, 'draft')}
+                        onClick={(e) => editingClaimId ? handleUpdateSubmit(e, 'draft') : handleCreateSubmit(e, 'draft')}
                         disabled={createSubmitting}
                         className="px-4 py-2 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/5 text-cyan-400 text-sm font-semibold transition-colors"
                       >
@@ -703,10 +943,10 @@ export default function ClaimsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={(e) => handleCreateSubmit(e, 'submitted')}
-                        disabled={createSubmitting || (selectedCategoryObj?.requireReceipt && !createForm.receiptUrl)}
+                        onClick={(e) => editingClaimId ? handleUpdateSubmit(e, 'submitted') : handleCreateSubmit(e, 'submitted')}
+                        disabled={createSubmitting || (selectedCategoryObj?.requireReceipt && createForm.receiptUrls.length === 0)}
                         className={`px-5 py-2 rounded-lg font-semibold transition-colors text-sm ${
-                          selectedCategoryObj?.requireReceipt && !createForm.receiptUrl
+                          selectedCategoryObj?.requireReceipt && createForm.receiptUrls.length === 0
                             ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                             : 'bg-cyan-500 hover:bg-cyan-600 text-slate-950'
                         }`}
@@ -719,6 +959,70 @@ export default function ClaimsPage() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Receipt Image Previewer */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 p-4">
+          <div className="absolute top-4 right-4 flex items-center space-x-3 z-50">
+            <button
+              onClick={() => setZoomScale((z) => Math.min(4, z + 0.25))}
+              className="flex items-center gap-1 px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-white rounded-lg text-xs font-semibold transition-colors"
+              title="Zoom In"
+            >
+              <ZoomIn className="h-4 w-4" />
+              Zoom In
+            </button>
+            <button
+              onClick={() => setZoomScale((z) => Math.max(0.5, z - 0.25))}
+              className="flex items-center gap-1 px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-white rounded-lg text-xs font-semibold transition-colors"
+              title="Zoom Out"
+            >
+              <ZoomOut className="h-4 w-4" />
+              Zoom Out
+            </button>
+            <button
+              onClick={() => setRotationAngle((r) => r + 90)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-white rounded-lg text-xs font-semibold transition-colors"
+              title="Rotate"
+            >
+              <RotateCw className="h-4 w-4" />
+              Rotate
+            </button>
+            <button
+              onClick={() => {
+                setZoomScale(1);
+                setRotationAngle(0);
+              }}
+              className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-white rounded-lg text-xs font-semibold transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => setPreviewUrl(null)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-red-650 hover:bg-red-600 border border-red-500/20 text-white rounded-lg text-xs font-semibold transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Close
+            </button>
+          </div>
+
+          <div className="relative max-w-full max-h-[85vh] overflow-hidden flex items-center justify-center p-8">
+            {previewUrl.toLowerCase().endsWith('.pdf') ? (
+              <iframe src={previewUrl} className="w-[80vw] h-[80vh] border-0 rounded-lg shadow-2xl bg-white" />
+            ) : (
+              <img
+                src={previewUrl}
+                alt="Receipt Preview"
+                style={{
+                  transform: `scale(${zoomScale}) rotate(${rotationAngle}deg)`,
+                  transition: 'transform 0.2s ease-in-out',
+                }}
+                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+              />
+            )}
           </div>
         </div>
       )}

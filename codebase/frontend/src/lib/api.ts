@@ -20,3 +20,26 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Automatically handle 401 Unauthorized responses
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      useAuthStore.getState().clearAuth();
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        if (
+          pathname !== '/login' &&
+          pathname !== '/signup' &&
+          pathname !== '/forgot-password' &&
+          pathname !== '/reset-password' &&
+          pathname !== '/accept-invite'
+        ) {
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);

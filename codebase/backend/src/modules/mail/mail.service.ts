@@ -57,7 +57,7 @@ export class MailService {
   }
 
   async sendPasswordResetMail(email: string, token: string, frontendUrl?: string): Promise<void> {
-    const baseUri = frontendUrl || 'http://localhost:3000';
+    const baseUri = frontendUrl || this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const resetUrl = `${baseUri}/reset-password?token=${token}`;
     const subject = 'Reset Your ExpenseFlow Password';
     const html = `
@@ -79,6 +79,41 @@ export class MailService {
         </p>
         <p style="color: #94a3b8; font-size: 12px; margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
           This link will expire in 15 minutes. If you did not request this password reset, please ignore this email.
+        </p>
+      </div>
+    `;
+    await this.sendMail(email, subject, html);
+  }
+
+  async sendInvitationMail(
+    email: string,
+    token: string,
+    organizationName: string,
+    roleName: string,
+    frontendUrl?: string,
+  ): Promise<void> {
+    const baseUri = frontendUrl || this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const acceptUrl = `${baseUri}/accept-invite?token=${token}`;
+    const subject = `Invitation to join ${organizationName} on ExpenseFlow`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #0f172a; margin-bottom: 16px;">You've Been Invited!</h2>
+        <p style="color: #475569; font-size: 16px; line-height: 24px;">
+          You have been invited to join <strong>${organizationName}</strong> as a <strong>${roleName}</strong> on ExpenseFlow.
+        </p>
+        <div style="margin: 24px 0; text-align: center;">
+          <a href="${acceptUrl}" style="background-color: #06b6d4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            Accept Invitation
+          </a>
+        </div>
+        <p style="color: #475569; font-size: 14px; line-height: 20px;">
+          If the button doesn't work, you can copy and paste the following link into your browser:
+        </p>
+        <p style="color: #06b6d4; word-break: break-all; font-size: 14px;">
+          ${acceptUrl}
+        </p>
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+          This link will expire in 7 days. If you were not expecting this invitation, please ignore this email.
         </p>
       </div>
     `;

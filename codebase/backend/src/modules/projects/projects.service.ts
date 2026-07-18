@@ -15,6 +15,17 @@ export class ProjectsService {
   async create(dto: CreateProjectDto) {
     const tenantId = getTenantId();
 
+    if (dto.budget === undefined || dto.budget === null || dto.budget <= 0) {
+      throw new BadRequestException('Project budget is compulsory and must be greater than 0');
+    }
+
+    // Lock currency to organization currency
+    const mongoose = await import('mongoose');
+    const OrgModel = mongoose.model('Organization');
+    const org = await OrgModel.findById(tenantId).exec();
+    const orgCurrency = org?.currency || 'USD';
+    const projectCurrency = orgCurrency; // Locked!
+
     const existingName = await this.projectRepository.findOne({
       name: dto.name,
     });
@@ -29,13 +40,70 @@ export class ProjectsService {
       throw new ConflictException('Project with this code already exists');
     }
 
-    return this.projectRepository.create({
+    // Organization Budget Limit Verification
+    const start = dto.startDate ? new Date(dto.startDate) : new Date();
+    const end = dto.endDate ? new Date(dto.endDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+    const BudgetModel = mongoose.model('Budget');
+    const orgBudget = await BudgetModel.findOne({
+      scope: 'organization',
+      status: 'active',
+      startDate: { $lte: start },
+      endDate: { $gte: end },
+      organization: new mongoose.Types.ObjectId(tenantId),
+    }).exec();
+
+    if (!orgBudget) {
+      throw new BadRequestException(
+        'No active organization budget covers this project period. Set up an organization budget first.'
+      );
+    }
+
+    // Sum other project budgets in this period
+    const existingProjectBudgets = await BudgetModel.find({
+      scope: 'project',
+      status: 'active',
+      organization: new mongoose.Types.ObjectId(tenantId),
+      startDate: { $gte: orgBudget.startDate },
+      endDate: { $lte: orgBudget.endDate },
+    }).exec();
+
+    const currentAllocated = existingProjectBudgets.reduce((sum, b: any) => sum + b.amount, 0);
+
+    if (currentAllocated + dto.budget > orgBudget.amount) {
+      throw new BadRequestException(
+        `Project budget allocation exceeds organization budget ceiling. ` +
+        `Available remaining: ${orgBudget.amount - currentAllocated} ${orgBudget.currency}. ` +
+        `Requested: ${dto.budget} ${projectCurrency}.`
+      );
+    }
+
+    // Create project
+    const project = await this.projectRepository.create({
       ...dto,
+      currency: projectCurrency,
       code: dto.code.toUpperCase(),
-      startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-      endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      startDate: start,
+      endDate: end,
       organization: tenantId as any,
     });
+
+    // Auto-create active project-scoped budget and expense alerting
+    await BudgetModel.create({
+      scope: 'project',
+      project: project._id,
+      amount: dto.budget,
+      currency: projectCurrency,
+      startDate: start,
+      endDate: end,
+      status: 'active',
+      spent: 0,
+      thresholds: [80, 90, 100],
+      alertedThresholds: [],
+      organization: tenantId as any,
+    });
+
+    return project;
   }
 
   private async getSpentAmount(projectId: string): Promise<number> {
@@ -119,9 +187,46 @@ export class ProjectsService {
     }
 
     const updateData: any = { ...dto };
+    delete updateData.currency; // Currency cannot be updated!
     if (dto.code) updateData.code = dto.code.toUpperCase();
     if (dto.startDate) updateData.startDate = new Date(dto.startDate);
     if (dto.endDate) updateData.endDate = new Date(dto.endDate);
+
+    if (dto.budget !== undefined && dto.budget !== null) {
+      const mongoose = await import('mongoose');
+      const BudgetModel = mongoose.model('Budget');
+      const budgetDoc = await BudgetModel.findOne({
+        scope: 'project',
+        project: project._id,
+        status: 'active',
+      }).exec();
+      if (budgetDoc) {
+        const orgBudget = await BudgetModel.findOne({
+          scope: 'organization',
+          status: 'active',
+          startDate: { $lte: budgetDoc.startDate },
+          endDate: { $gte: budgetDoc.endDate },
+        }).exec();
+
+        if (orgBudget) {
+          const otherBudgets = await BudgetModel.find({
+            scope: 'project',
+            status: 'active',
+            _id: { $ne: budgetDoc._id },
+            startDate: { $gte: orgBudget.startDate },
+            endDate: { $lte: orgBudget.endDate },
+          }).exec();
+
+          const allocated = otherBudgets.reduce((sum, b: any) => sum + b.amount, 0);
+          if (allocated + dto.budget > orgBudget.amount) {
+            throw new BadRequestException(
+              `Updating budget exceeds organization limit. Max available: ${orgBudget.amount - allocated}`
+            );
+          }
+        }
+        await BudgetModel.findByIdAndUpdate(budgetDoc._id, { amount: dto.budget }).exec();
+      }
+    }
 
     return this.projectRepository.update(id, updateData);
   }

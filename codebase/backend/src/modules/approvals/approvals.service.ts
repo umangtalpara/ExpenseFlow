@@ -9,6 +9,9 @@ import { ApprovalRequest, ApprovalRequestStatus, ApprovalAction } from './schema
 import { ExpenseStatus } from '../expenses/schemas/expense.schema';
 import { getTenantId } from '../../common/tenant/tenant.context';
 import { Types } from 'mongoose';
+import { UserRepository } from '../users/repositories/user.repository';
+import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ApprovalsService {
@@ -16,6 +19,9 @@ export class ApprovalsService {
     private readonly workflowRepo: ApprovalWorkflowRepository,
     private readonly requestRepo: ApprovalRequestRepository,
     private readonly expenseRepo: ExpenseRepository,
+    private readonly userRepository: UserRepository,
+    private readonly mailService: MailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // --- Workflows CRUD ---
@@ -138,7 +144,7 @@ export class ApprovalsService {
     }
 
     // Create ApprovalRequest
-    return this.requestRepo.create({
+    const request = await this.requestRepo.create({
       expense: expense._id,
       workflow: matchedWorkflow as any,
       currentStepNumber: 1,
@@ -146,6 +152,15 @@ export class ApprovalsService {
       history: [],
       organization: tenantId as any,
     });
+
+    // Notify first step approver(s)
+    const populatedExpense = await expense.populate('employee');
+    const firstStep = matchedWorkflow.steps.find((s) => s.stepNumber === 1);
+    if (firstStep) {
+      await this.notifyApprovers(firstStep, populatedExpense);
+    }
+
+    return request;
   }
 
   // --- Action Processor ---
@@ -178,6 +193,23 @@ export class ApprovalsService {
       throw new ForbiddenException('You are not authorized to approve this step');
     }
 
+    // Additional check for Project Manager role: they can only approve projects they manage
+    const mongoose = await import('mongoose');
+    const RoleModel = mongoose.model('Role');
+    const roleDoc = await RoleModel.findById(userRoleId).exec();
+    const roleName = roleDoc?.name || '';
+    if (roleName === 'Project Manager') {
+      const expense = await this.expenseRepo.findById(request.expense.toString());
+      if (!expense || !expense.project) {
+        throw new ForbiddenException('Project Manager cannot approve organization-level expenses');
+      }
+      const ProjectModel = mongoose.model('Project');
+      const projDoc = await ProjectModel.findById(expense.project.toString()).exec();
+      if (!projDoc || !projDoc.projectManagers.some((pmId: any) => pmId.toString() === userId)) {
+        throw new ForbiddenException('You are not authorized to approve expenses for this project');
+      }
+    }
+
     // Add action to history
     request.history.push({
       stepNumber: request.currentStepNumber,
@@ -187,17 +219,55 @@ export class ApprovalsService {
       comment: dto.comment,
     });
 
+    const populatedExpense = await this.expenseRepo.findById(request.expense.toString()).then(e => e?.populate('employee'));
+    const approverUserDoc = await this.userRepository.findById(userId, { bypassTenantIsolation: true });
+    const approverName = approverUserDoc?.name || 'Approver';
+
     if (dto.action === ApprovalAction.REJECTED) {
       request.status = ApprovalRequestStatus.REJECTED;
       await this.expenseRepo.update(request.expense.toString(), { status: ExpenseStatus.REJECTED });
+
+      // Notify submitter of rejection
+      if (populatedExpense && populatedExpense.employee) {
+        const title = `Expense Claim Rejected`;
+        const body = `Your expense claim "${populatedExpense.merchant}" has been Rejected by ${approverName}. Reason: ${dto.comment || 'N/A'}`;
+        await this.notificationsService.createNotification(
+          (populatedExpense.employee as any)._id.toString(),
+          title,
+          body,
+          'CLAIM_REJECTED',
+          {},
+          request.organization.toString()
+        );
+        await this.mailService.sendMail((populatedExpense.employee as any).email, title, `<p>${body}</p>`);
+      }
     } else {
       // Verify next step exists
       const nextStep = workflow.steps.find((s) => s.stepNumber === request.currentStepNumber + 1);
       if (nextStep) {
         request.currentStepNumber += 1;
+        // Notify next step approver(s)
+        if (populatedExpense) {
+          await this.notifyApprovers(nextStep, populatedExpense);
+        }
       } else {
         request.status = ApprovalRequestStatus.APPROVED;
         await this.expenseRepo.update(request.expense.toString(), { status: ExpenseStatus.APPROVED });
+
+        // Notify submitter of final approval
+        if (populatedExpense && populatedExpense.employee) {
+          const title = `Expense Claim Approved`;
+          const body = `Your expense claim "${populatedExpense.merchant}" has been Approved by ${approverName}.`;
+          await this.notificationsService.createNotification(
+            (populatedExpense.employee as any)._id.toString(),
+            title,
+            body,
+            'CLAIM_APPROVED',
+            {},
+            request.organization.toString()
+          );
+          await this.mailService.sendMail((populatedExpense.employee as any).email, title, `<p>${body}</p>`);
+        }
       }
     }
 
@@ -226,6 +296,11 @@ export class ApprovalsService {
 
     const inboxItems: any[] = [];
 
+    const mongoose = await import('mongoose');
+    const RoleModel = mongoose.model('Role');
+    const roleDoc = await RoleModel.findById(userRoleId).exec();
+    const roleName = roleDoc?.name || '';
+
     for (const req of activeRequests) {
       const wf = workflows.find((w) => w._id.toString() === req.workflow.toString());
       if (!wf) continue;
@@ -241,6 +316,27 @@ export class ApprovalsService {
           { path: 'expense', populate: ['category', 'paymentMethod', 'project', 'employee'] },
           'workflow',
         ]);
+
+        if (roleName === 'Project Manager') {
+          const expenseProj = (populated.expense as any)?.project;
+          if (!expenseProj) {
+            continue; // PMs cannot approve organization-level expenses
+          }
+
+          const ProjectModel = mongoose.model('Project');
+          const projDoc = await ProjectModel.findById(expenseProj._id ? expenseProj._id : expenseProj).exec();
+          if (!projDoc) {
+            continue;
+          }
+
+          const isAssigned = projDoc.projectManagers.some(
+            (pmId: any) => pmId.toString() === userId
+          );
+          if (!isAssigned) {
+            continue; // Not assigned to this project!
+          }
+        }
+
         inboxItems.push(populated);
       }
     }
@@ -252,7 +348,39 @@ export class ApprovalsService {
     return this.requestRepo.find({});
   }
 
+  async cancelPendingRequest(expenseId: string) {
+    const request = await this.requestRepo.findOne({
+      expense: new Types.ObjectId(expenseId),
+      status: ApprovalRequestStatus.PENDING,
+    });
+    if (request) {
+      await this.requestRepo.delete(request._id.toString());
+    }
+  }
+
   // --- Helpers ---
+
+  private async notifyApprovers(step: ApprovalStep, expense: any) {
+    const tenantId = getTenantId() || expense.organization.toString();
+    const title = `Action Required: Expense Claim Approval`;
+    const body = `An expense claim of ${expense.amount} ${expense.currency} for "${expense.merchant}" submitted by ${expense.employee?.name || 'Employee'} requires your review.`;
+
+    if (step.approverUser) {
+      const recipientId = step.approverUser.toString();
+      const user = await this.userRepository.findById(recipientId, { bypassTenantIsolation: true });
+      if (user) {
+        await this.notificationsService.createNotification(recipientId, title, body, 'APPROVAL_REQUIRED', {}, tenantId);
+        await this.mailService.sendMail(user.email, title, `<p>${body}</p>`);
+      }
+    } else if (step.approverRole) {
+      const roleId = step.approverRole.toString();
+      const usersWithRole = await this.userRepository.find({ role: new Types.ObjectId(roleId) });
+      for (const user of usersWithRole) {
+        await this.notificationsService.createNotification(user._id.toString(), title, body, 'APPROVAL_REQUIRED', {}, tenantId);
+        await this.mailService.sendMail(user.email, title, `<p>${body}</p>`);
+      }
+    }
+  }
 
   private validateSteps(steps: ApprovalStep[]) {
     if (!steps || steps.length === 0) {

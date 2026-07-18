@@ -57,6 +57,12 @@ export class Expense {
   @Prop({ trim: true })
   receiptUrl?: string;
 
+  @Prop({ type: Boolean, default: false })
+  requestReimbursement: boolean;
+
+  @Prop({ type: [String], default: [] })
+  receiptUrls: string[];
+
   @Prop({ type: String, enum: ExpenseStatus, default: ExpenseStatus.DRAFT })
   status: ExpenseStatus;
 

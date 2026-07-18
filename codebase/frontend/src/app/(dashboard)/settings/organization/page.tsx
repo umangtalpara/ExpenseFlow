@@ -119,7 +119,7 @@ function ProfileTab({ isAdmin }: { isAdmin: boolean }) {
     try {
       const r = await api.patch('/organizations/profile', {
         name: form.name, website: form.website, address: form.address,
-        currency: form.currency, timezone: form.timezone,
+        timezone: form.timezone,
       });
       setSuccess('Organization profile updated successfully');
       setForm((p) => ({ ...p, name: r.data.name }));

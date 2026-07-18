@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, HttpCode, HttpStatus, Req, ForbiddenException } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto, UpdateProjectDto, AssignMembersDto, AssignManagersDto } from './dto/project.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -20,8 +20,18 @@ export class ProjectsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll() {
-    return this.projectsService.findAll();
+  async findAll(@Req() req: any) {
+    const mongoose = await import('mongoose');
+    const RoleModel = mongoose.model('Role');
+    const roleDoc = await RoleModel.findById(req.user.role).exec();
+    const roleName = roleDoc?.name || '';
+    const isAdmin = roleName === 'Organization Admin' || roleName === 'Administrator' || roleName.includes('Admin');
+
+    if (isAdmin) {
+      return this.projectsService.findAll();
+    } else {
+      return this.projectsService.findMine(req.user.id);
+    }
   }
 
   @Get('my')
@@ -32,8 +42,34 @@ export class ProjectsController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(id);
+  async findOne(@Req() req: any, @Param('id') id: string) {
+    const project = await this.projectsService.findOne(id);
+
+    const mongoose = await import('mongoose');
+    const RoleModel = mongoose.model('Role');
+    const roleDoc = await RoleModel.findById(req.user.role).exec();
+    const roleName = roleDoc?.name || '';
+    const isAdmin = roleName === 'Organization Admin' || roleName === 'Administrator' || roleName.includes('Admin');
+
+    if (!isAdmin) {
+      if (roleName === 'Project Manager') {
+        const isAssigned = project.projectManagers.some(
+          (pmId: any) => pmId.toString() === req.user.id
+        );
+        if (!isAssigned) {
+          throw new ForbiddenException('Access denied: You are not assigned to this project');
+        }
+      } else {
+        const isAssigned = project.employees.some(
+          (empId: any) => empId.toString() === req.user.id
+        );
+        if (!isAssigned) {
+          throw new ForbiddenException('Access denied: You are not assigned to this project');
+        }
+      }
+    }
+
+    return project;
   }
 
   @Put(':id')

@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { RolesModule } from '../roles/roles.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { AuthModule } from '../auth/auth.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthModule } from '../auth/auth.module';
     RolesModule,
     OrganizationsModule,
     AuthModule,
+    MailModule,
   ],
   providers: [InvitationRepository, InvitationService],
   controllers: [InvitationController],

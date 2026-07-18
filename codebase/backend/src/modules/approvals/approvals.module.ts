@@ -8,6 +8,9 @@ import { ApprovalsService } from './approvals.service';
 import { ApprovalsController } from './approvals.controller';
 import { ExpensesModule } from '../expenses/expenses.module';
 import { RolesModule } from '../roles/roles.module';
+import { UsersModule } from '../users/users.module';
+import { MailModule } from '../mail/mail.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -17,6 +20,9 @@ import { RolesModule } from '../roles/roles.module';
     ]),
     forwardRef(() => ExpensesModule),
     RolesModule,
+    UsersModule,
+    MailModule,
+    NotificationsModule,
   ],
   providers: [ApprovalWorkflowRepository, ApprovalRequestRepository, ApprovalsService],
   controllers: [ApprovalsController],

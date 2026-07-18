@@ -103,14 +103,14 @@ export default function ApprovalsPage() {
         api.get('/approvals/history'),
         api.get('/categories'),
         api.get('/roles'),
-        api.get('/employees'),
+        api.get('/users?limit=100'),
       ]);
       setInbox(inboxRes.data);
       setWorkflows(wfRes.data);
       setHistoryLogs(historyRes.data);
       setCategories(catRes.data);
       setRoles(roleRes.data);
-      setEmployees(empRes.data);
+      setEmployees(empRes.data.users || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch approval engine data.');
     } finally {

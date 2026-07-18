@@ -103,13 +103,20 @@ export class ExpensesService {
     return expense;
   }
 
-  async findAll(query?: { employeeId?: string; projectId?: string; status?: string }) {
+  async findAll(query?: { employeeId?: string; projectId?: string; status?: string; allowedProjectIds?: string[] }) {
     const filter: Record<string, any> = {};
-    if (query?.employeeId) {
-      filter.employee = new Types.ObjectId(query.employeeId);
-    }
     if (query?.projectId) {
       filter.project = new Types.ObjectId(query.projectId);
+      if (query.employeeId && !query.allowedProjectIds) {
+        filter.employee = new Types.ObjectId(query.employeeId);
+      }
+    } else if (query?.allowedProjectIds) {
+      filter.$or = [
+        { employee: new Types.ObjectId(query.employeeId) },
+        { project: { $in: query.allowedProjectIds.map((id) => new Types.ObjectId(id)) } },
+      ];
+    } else if (query?.employeeId) {
+      filter.employee = new Types.ObjectId(query.employeeId);
     }
     if (query?.status) {
       filter.status = query.status;
@@ -132,14 +139,18 @@ export class ExpensesService {
       throw new NotFoundException('Expense claim not found');
     }
 
-    // Standard employee can only edit their own draft claims
-    const isAdmin = userRole === 'Administrator' || userRole === 'Organization Admin' || userRole.includes('Admin');
+    const mongoose = await import('mongoose');
+    const RoleModel = mongoose.model('Role');
+    const roleDoc = await RoleModel.findById(userRole).exec();
+    const roleName = roleDoc?.name || '';
+    const isAdmin = roleName === 'Organization Admin' || roleName === 'Administrator' || roleName.includes('Admin');
+
     if (expense.employee.toString() !== userId && !isAdmin) {
       throw new ForbiddenException('You do not have permission to edit this claim');
     }
 
-    if (expense.status !== ExpenseStatus.DRAFT && !isAdmin) {
-      throw new BadRequestException('Only draft expense claims can be updated');
+    if (expense.status !== ExpenseStatus.DRAFT && expense.status !== ExpenseStatus.SUBMITTED && !isAdmin) {
+      throw new BadRequestException('Only draft or pending expense claims can be updated');
     }
 
     // Verify metadata if updated
@@ -195,7 +206,7 @@ export class ExpensesService {
 
     // Receipt check
     if (finalStatus === ExpenseStatus.SUBMITTED && category && category.requireReceipt) {
-      if (!finalReceiptUrl) {
+      if (!finalReceiptUrl && (!dto.receiptUrls || dto.receiptUrls.length === 0)) {
         throw new BadRequestException('Receipt attachment is required for this category');
       }
     }
@@ -207,6 +218,27 @@ export class ExpensesService {
       if (updated!.project) {
         await this.triggerBudgetUpdate(updated!.project.toString(), updated!.convertedAmount);
       }
+      await this.approvalsService.submitToWorkflow(updated!._id.toString());
+    } 
+    // If it was already submitted and gets updated:
+    else if (expense.status === ExpenseStatus.SUBMITTED) {
+      // 1. Recalculate budgets
+      const oldProject = expense.project?.toString();
+      const newProject = updated!.project?.toString();
+
+      if (oldProject !== newProject) {
+        if (oldProject) {
+          await this.triggerBudgetUpdate(oldProject, -expense.convertedAmount);
+        }
+        if (newProject) {
+          await this.triggerBudgetUpdate(newProject, updated!.convertedAmount);
+        }
+      } else if (newProject && expense.convertedAmount !== updated!.convertedAmount) {
+        await this.triggerBudgetUpdate(newProject, updated!.convertedAmount - expense.convertedAmount);
+      }
+
+      // 2. Restart workflow: cancel previous request and create a new one
+      await this.approvalsService.cancelPendingRequest(updated!._id.toString());
       await this.approvalsService.submitToWorkflow(updated!._id.toString());
     }
 

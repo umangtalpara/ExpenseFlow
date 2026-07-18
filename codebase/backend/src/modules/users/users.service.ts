@@ -110,6 +110,10 @@ export class UsersService {
     if (dto.joiningDate) {
       updateData.joiningDate = new Date(dto.joiningDate);
     }
+    if (dto.password) {
+      const bcrypt = await import('bcrypt');
+      updateData.password = await bcrypt.hash(dto.password, 12);
+    }
 
     const updated = await this.userRepository.update(id, updateData);
     if (!updated) {

@@ -18,6 +18,9 @@ import {
   Folder,
   Layers,
   Wallet,
+  Plus,
+  ArrowRight,
+  BarChart3,
 } from 'lucide-react';
 import Link from 'next/link';
 import { CopyrightFooter } from '@/components/copyright-footer';
@@ -185,6 +188,73 @@ export default function DashboardHome() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Quick Actions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Link
+          href="/claims?create=true"
+          className="group relative rounded-2xl border border-white/5 bg-gradient-to-br from-[#0e1726]/60 to-[#0b101b]/60 backdrop-blur-md p-6 hover:border-cyan-500/30 transition-all duration-300 flex items-center justify-between shadow-lg"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl group-hover:bg-cyan-500/20 group-hover:text-cyan-300 transition-all duration-300">
+              <Plus className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">Submit Claim</h3>
+              <p className="text-xs text-slate-400">File a new expense or utility claim</p>
+            </div>
+          </div>
+          <ArrowRight className="h-5 w-5 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all duration-300" />
+        </Link>
+
+        {isAdmin ? (
+          <Link
+            href="/projects?create=true"
+            className="group relative rounded-2xl border border-white/5 bg-gradient-to-br from-[#0e1726]/60 to-[#0b101b]/60 backdrop-blur-md p-6 hover:border-purple-500/30 transition-all duration-300 flex items-center justify-between shadow-lg"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-xl group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-all duration-300">
+                <FolderKanban className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors">Create Project</h3>
+                <p className="text-xs text-slate-400">Setup a new project environment</p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all duration-300" />
+          </Link>
+        ) : (
+          <div
+            className="relative rounded-2xl border border-white/5 bg-slate-900/20 backdrop-blur-md p-6 flex items-center justify-between shadow-lg opacity-40 select-none cursor-not-allowed"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-slate-850 text-slate-500 rounded-xl">
+                <FolderKanban className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-400">Create Project</h3>
+                <p className="text-xs text-slate-500">Requires Administrative rights</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Link
+          href="/reports"
+          className="group relative rounded-2xl border border-white/5 bg-gradient-to-br from-[#0e1726]/60 to-[#0b101b]/60 backdrop-blur-md p-6 hover:border-emerald-500/30 transition-all duration-300 flex items-center justify-between shadow-lg"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl group-hover:bg-emerald-500/20 group-hover:text-emerald-300 transition-all duration-300">
+              <BarChart3 className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">View Reports</h3>
+              <p className="text-xs text-slate-400">Export audits & monthly cash flow</p>
+            </div>
+          </div>
+          <ArrowRight className="h-5 w-5 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all duration-300" />
+        </Link>
       </div>
 
       {/* KPI Cards Grid */}

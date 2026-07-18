@@ -17,10 +17,10 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
     return (
       <div className="relative w-full">
         <input
-          type={showPassword ? 'text' : 'password'}
           className={`flex h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
           ref={ref}
           {...props}
+          type={showPassword ? 'text' : 'password'}
         />
         <button
           type="button"
