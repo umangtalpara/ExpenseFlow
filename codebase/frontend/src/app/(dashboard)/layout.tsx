@@ -23,6 +23,7 @@ import {
   History,
   BarChart3,
   Shield,
+  Inbox,
 } from 'lucide-react';
 
 const navigation = [
@@ -32,6 +33,7 @@ const navigation = [
   { name: 'Vendors', href: '/vendors', icon: ShieldAlert },
   { name: 'Budgets', href: '/budgets', icon: BadgeCent },
   { name: 'Claims', href: '/claims', icon: FileText },
+  { name: 'Approvals', href: '/approvals', icon: Inbox },
   { name: 'Reimbursements', href: '/reimbursements', icon: Banknote },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Audit Logs', href: '/audit-logs', icon: History },

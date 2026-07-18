@@ -363,19 +363,23 @@ export class ApprovalsService {
     const title = `Action Required: Expense Claim Approval`;
     const body = `An expense claim of ${expense.amount} ${expense.currency} for "${expense.merchant}" submitted by ${expense.employee?.name || 'Employee'} requires your review.`;
 
-    if (step.approverUser) {
-      const recipientId = step.approverUser.toString();
+    const approverUserId = (step.approverUser as any)?._id || step.approverUser;
+    if (approverUserId) {
+      const recipientId = approverUserId.toString();
       const user = await this.userRepository.findById(recipientId, { bypassTenantIsolation: true });
       if (user) {
         await this.notificationsService.createNotification(recipientId, title, body, 'APPROVAL_REQUIRED', {}, tenantId);
         await this.mailService.sendMail(user.email, title, `<p>${body}</p>`);
       }
-    } else if (step.approverRole) {
-      const roleId = step.approverRole.toString();
-      const usersWithRole = await this.userRepository.find({ role: new Types.ObjectId(roleId) });
-      for (const user of usersWithRole) {
-        await this.notificationsService.createNotification(user._id.toString(), title, body, 'APPROVAL_REQUIRED', {}, tenantId);
-        await this.mailService.sendMail(user.email, title, `<p>${body}</p>`);
+    } else {
+      const approverRoleId = (step.approverRole as any)?._id || step.approverRole;
+      if (approverRoleId) {
+        const roleId = approverRoleId.toString();
+        const usersWithRole = await this.userRepository.find({ role: new Types.ObjectId(roleId) });
+        for (const user of usersWithRole) {
+          await this.notificationsService.createNotification(user._id.toString(), title, body, 'APPROVAL_REQUIRED', {}, tenantId);
+          await this.mailService.sendMail(user.email, title, `<p>${body}</p>`);
+        }
       }
     }
   }
