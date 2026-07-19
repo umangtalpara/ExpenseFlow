@@ -478,11 +478,12 @@ export default function VendorsPage() {
                 >
                   Cancel
                 </button>
-                <button
+                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {createSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {createSubmitting ? 'Creating...' : 'Create Vendor'}
                 </button>
               </div>
@@ -538,11 +539,12 @@ export default function VendorsPage() {
                 >
                   Cancel
                 </button>
-                <button
+                 <button
                   type="submit"
                   disabled={linkSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {linkSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {linkSubmitting ? 'Linking...' : 'Save Mappings'}
                 </button>
               </div>
@@ -676,11 +678,12 @@ export default function VendorsPage() {
                 >
                   Cancel
                 </button>
-                <button
+                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {createSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {createSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>

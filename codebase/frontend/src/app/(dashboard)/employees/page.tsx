@@ -530,8 +530,9 @@ export default function EmployeeDirectoryPage() {
               <button
                 type="submit"
                 disabled={inviteSubmitting}
-                className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
               >
+                {inviteSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                 {inviteSubmitting ? 'Generating...' : 'Generate Onboarding Token'}
               </button>
             </form>
@@ -690,8 +691,9 @@ export default function EmployeeDirectoryPage() {
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {editSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {editSubmitting ? 'Saving...' : 'Save Profile'}
                 </button>
               </div>

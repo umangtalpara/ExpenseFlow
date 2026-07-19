@@ -211,7 +211,7 @@ export default function DepartmentsDesignationsPage() {
                   disabled={submitting}
                   className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-all duration-200 shadow-lg shadow-cyan-500/25 text-sm disabled:opacity-50"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  {submitting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                   {submitting ? 'Creating...' : 'Create'}
                 </button>
               </form>
@@ -326,8 +326,9 @@ export default function DepartmentsDesignationsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {submitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {submitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>

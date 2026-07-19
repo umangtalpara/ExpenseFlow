@@ -937,20 +937,22 @@ export default function ClaimsPage() {
                         type="button"
                         onClick={(e) => editingClaimId ? handleUpdateSubmit(e, 'draft') : handleCreateSubmit(e, 'draft')}
                         disabled={createSubmitting}
-                        className="px-4 py-2 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/5 text-cyan-400 text-sm font-semibold transition-colors"
+                        className="flex items-center justify-center px-4 py-2 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/5 text-cyan-400 text-sm font-semibold transition-colors disabled:opacity-50"
                       >
+                        {createSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                         Save Draft
                       </button>
                       <button
                         type="button"
                         onClick={(e) => editingClaimId ? handleUpdateSubmit(e, 'submitted') : handleCreateSubmit(e, 'submitted')}
                         disabled={createSubmitting || (selectedCategoryObj?.requireReceipt && createForm.receiptUrls.length === 0)}
-                        className={`px-5 py-2 rounded-lg font-semibold transition-colors text-sm ${
+                        className={`flex items-center justify-center px-5 py-2 rounded-lg font-semibold transition-colors text-sm disabled:opacity-50 ${
                           selectedCategoryObj?.requireReceipt && createForm.receiptUrls.length === 0
                             ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                             : 'bg-cyan-500 hover:bg-cyan-600 text-slate-950'
                         }`}
                       >
+                        {createSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                         {createSubmitting ? 'Submitting...' : 'Submit Claim'}
                       </button>
                     </>

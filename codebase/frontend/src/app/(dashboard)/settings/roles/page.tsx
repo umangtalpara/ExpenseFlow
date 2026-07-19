@@ -189,7 +189,7 @@ export default function RolesSettingsPage() {
                   disabled={submitting}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-all text-sm disabled:opacity-50 shadow-lg shadow-cyan-500/20 mt-1"
                 >
-                  <Plus className="h-4 w-4" />
+                  {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   {submitting ? 'Creating...' : 'Create Role'}
                 </button>
               </form>

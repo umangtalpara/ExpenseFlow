@@ -270,7 +270,7 @@ function CategoriesTab({ isAdmin }: { isAdmin: boolean }) {
                   <span className="text-xs text-slate-300">Require receipt upload</span>
                 </label>
                 <button type="submit" disabled={submitting} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold text-sm disabled:opacity-50 shadow-lg shadow-cyan-500/20 transition-all">
-                  <Plus className="h-4 w-4" />{submitting ? 'Creating...' : 'Create Category'}
+                  {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{submitting ? 'Creating...' : 'Create Category'}
                 </button>
               </form>
             </div>
@@ -457,7 +457,7 @@ function PaymentMethodsTab({ isAdmin }: { isAdmin: boolean }) {
                     <option value="active">Active</option><option value="inactive">Inactive</option>
                   </select></div>
                 <button type="submit" disabled={submitting} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold text-sm disabled:opacity-50 shadow-lg shadow-cyan-500/20 transition-all">
-                  <Plus className="h-4 w-4" />{submitting ? 'Creating...' : 'Create Method'}
+                  {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{submitting ? 'Creating...' : 'Create Method'}
                 </button>
               </form>
             </div>
@@ -611,7 +611,7 @@ function RolesTab({ isAdmin }: { isAdmin: boolean }) {
                 <div><label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Description</label>
                   <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional description" className={inputCls} disabled={submitting} /></div>
                 <button type="submit" disabled={submitting} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold text-sm disabled:opacity-50 shadow-lg shadow-cyan-500/20 transition-all">
-                  <Plus className="h-4 w-4" />{submitting ? 'Creating...' : 'Create Role'}
+                  {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{submitting ? 'Creating...' : 'Create Role'}
                 </button>
               </form>
               <p className="text-[11px] text-slate-500 leading-relaxed pt-1">

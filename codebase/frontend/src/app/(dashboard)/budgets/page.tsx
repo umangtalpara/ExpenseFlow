@@ -64,11 +64,13 @@ export default function BudgetsPage() {
   });
 
   const openEditOrgModal = (budget: BudgetCardItem) => {
+    setSelectedBudget(budget);
     setEditOrgForm({
       amount: budget.amount,
       startDate: budget.startDate ? budget.startDate.split('T')[0] : '',
       endDate: budget.endDate ? budget.endDate.split('T')[0] : '',
-    });
+      status: budget.status || 'active',
+    } as any);
     setEditOrgModalOpen(true);
   };
 
@@ -184,24 +186,25 @@ export default function BudgetsPage() {
 
   const handleEditOrgSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!orgBudget || !isAdmin) return;
+    if (!selectedBudget || !isAdmin) return;
 
     setEditOrgSubmitting(true);
     setError('');
     setSuccess('');
 
     try {
-      await api.put(`/budgets/${orgBudget._id}`, {
+      await api.put(`/budgets/${selectedBudget._id}`, {
         amount: Number(editOrgForm.amount),
         startDate: new Date(editOrgForm.startDate).toISOString(),
         endDate: new Date(editOrgForm.endDate).toISOString(),
+        status: (editOrgForm as any).status || selectedBudget.status,
       });
 
-      setSuccess('Organization budget updated successfully');
+      setSuccess('Budget updated successfully');
       setEditOrgModalOpen(false);
       loadData();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update organization budget');
+      setError(err.response?.data?.message || 'Failed to update budget');
     } finally {
       setEditOrgSubmitting(false);
     }
@@ -331,7 +334,7 @@ export default function BudgetsPage() {
           <div className="rounded-xl border border-white/5 bg-[#0b0f19]/40 p-6 space-y-4">
             <h3 className="text-md font-bold text-white tracking-tight flex items-center gap-2">
               <Coins className="h-4 w-4 text-cyan-400" />
-              Project Allocation Details
+              Project Allocation Details ({projectBudgets.length})
             </h3>
 
             {loading ? (
@@ -347,7 +350,18 @@ export default function BudgetsPage() {
                     <div key={pb._id} className="p-4 rounded-lg border border-white/5 bg-white/5 hover:border-white/10 transition-all duration-200 space-y-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="text-sm font-semibold text-white">{proj?.name || 'Project Name'}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-white">{proj?.name || 'Project Name'}</p>
+                            {isAdmin && (
+                              <button
+                                onClick={() => openEditOrgModal(pb)}
+                                className="text-slate-400 hover:text-white p-0.5 rounded hover:bg-white/5 transition-colors"
+                                title="Edit Project Budget"
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
                           <p className="text-[10px] text-slate-500 font-mono uppercase">Code: {proj?.code || 'ORN'}</p>
                         </div>
                         <div className="text-right">
@@ -384,6 +398,57 @@ export default function BudgetsPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Organization Budget Caps History List */}
+          <div className="rounded-xl border border-white/5 bg-[#0b0f19]/40 p-6 space-y-4">
+            <h3 className="text-md font-bold text-white tracking-tight flex items-center gap-2">
+              <Landmark className="h-4 w-4 text-cyan-400" />
+              Organization Budget Caps ({budgets.filter((b) => b.scope === 'organization').length})
+            </h3>
+
+            {loading ? (
+              <p className="text-sm text-slate-500">Loading organization budgets...</p>
+            ) : budgets.filter((b) => b.scope === 'organization').length === 0 ? (
+              <p className="text-sm text-slate-500">No organization budgets configured.</p>
+            ) : (
+              <div className="space-y-4">
+                {budgets
+                  .filter((b) => b.scope === 'organization')
+                  .map((ob) => {
+                    return (
+                      <div key={ob._id} className="p-4 rounded-lg border border-white/5 bg-white/5 hover:border-white/10 transition-all duration-200 flex justify-between items-center">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-white">
+                            {ob.amount.toLocaleString(undefined, { style: 'currency', currency: ob.currency })}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Period: {new Date(ob.startDate).toLocaleDateString()} - {new Date(ob.endDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
+                            ob.status === 'active'
+                              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                              : 'bg-slate-500/10 border border-slate-500/20 text-slate-400'
+                          }`}>
+                            {ob.status}
+                          </span>
+                          {isAdmin && (
+                            <button
+                              onClick={() => openEditOrgModal(ob)}
+                              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all"
+                              title="Edit Organization Budget"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -545,11 +610,12 @@ export default function BudgetsPage() {
                 >
                   Cancel
                 </button>
-                <button
+                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {createSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {createSubmitting ? 'Configuring...' : 'Allocate Budget'}
                 </button>
               </div>
@@ -593,11 +659,12 @@ export default function BudgetsPage() {
                 >
                   Cancel
                 </button>
-                <button
+                 <button
                   type="submit"
                   disabled={simSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {simSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {simSubmitting ? 'Updating...' : 'Update Spent'}
                 </button>
               </div>
@@ -606,15 +673,19 @@ export default function BudgetsPage() {
         </div>
       )}
 
-      {/* Edit Organization Budget Modal */}
-      {editOrgModalOpen && orgBudget && (
+       {/* Edit Organization / Project Budget Modal */}
+      {editOrgModalOpen && selectedBudget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditOrgModalOpen(false)} />
           <div className="relative w-full max-w-md rounded-xl border border-white/5 bg-[#0b0f19] p-6 shadow-2xl space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold text-white">Edit Organization Budget</h3>
-                <p className="text-xs text-slate-500">Update company-wide budget cap and dates</p>
+                <h3 className="text-lg font-bold text-white">
+                  Edit {selectedBudget.scope === 'organization' ? 'Organization Budget' : 'Project Budget'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Update {selectedBudget.scope === 'organization' ? 'company-wide budget cap' : 'project allocation'} details
+                </p>
               </div>
               <button onClick={() => setEditOrgModalOpen(false)} className="text-slate-500 hover:text-slate-300">
                 <X className="h-5 w-5" />
@@ -623,7 +694,7 @@ export default function BudgetsPage() {
 
             <form onSubmit={handleEditOrgSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Cap Amount ({orgBudget.currency})</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Amount ({selectedBudget.currency})</label>
                 <input
                   type="number"
                   value={editOrgForm.amount}
@@ -657,6 +728,20 @@ export default function BudgetsPage() {
                 </div>
               </div>
 
+              {selectedBudget.scope === 'project' && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Budget Status</label>
+                  <select
+                    value={(editOrgForm as any).status || 'active'}
+                    onChange={(e) => setEditOrgForm({ ...editOrgForm, status: e.target.value } as any)}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
+
               <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
                 <button
                   type="button"
@@ -668,8 +753,9 @@ export default function BudgetsPage() {
                 <button
                   type="submit"
                   disabled={editOrgSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {editOrgSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {editOrgSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
