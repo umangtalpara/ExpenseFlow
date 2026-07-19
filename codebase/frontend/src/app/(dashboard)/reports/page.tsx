@@ -361,7 +361,7 @@ export default function ReportsPage() {
 
           {/* Amount Range Min */}
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Min Amount ($)</label>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Min Amount</label>
             <input
               type="number"
               placeholder="e.g. 50"
@@ -373,7 +373,7 @@ export default function ReportsPage() {
 
           {/* Amount Range Max */}
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Max Amount ($)</label>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Max Amount</label>
             <input
               type="number"
               placeholder="e.g. 1000"
@@ -480,11 +480,7 @@ export default function ReportsPage() {
                         <p className="font-bold text-white text-base">
                           {exp.amount.toLocaleString()} {exp.currency}
                         </p>
-                        {exp.currency !== orgCurrency && (
-                          <p className="text-[10px] text-slate-500">
-                            ~ {exp.convertedAmount.toLocaleString()} {orgCurrency}
-                          </p>
-                        )}
+
                       </div>
                     </td>
                   </tr>

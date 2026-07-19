@@ -353,7 +353,7 @@ export default function ClaimsPage() {
   const approvedCount = claims.filter((c) => c.status === 'approved').length;
   const totalReimbursedAmount = claims
     .filter((c) => c.status === 'reimbursed' || c.status === 'approved')
-    .reduce((sum, c) => sum + c.convertedAmount, 0);
+    .reduce((sum, c) => sum + c.amount, 0);
 
   if (loading) {
     return (
@@ -451,8 +451,7 @@ export default function ClaimsPage() {
                   <th className="p-4">Category</th>
                   <th className="p-4">Project</th>
                   <th className="p-4">Payment Method</th>
-                  <th className="p-4 text-right">Original Amount</th>
-                  <th className="p-4 text-right">Converted (Base)</th>
+                  <th className="p-4 text-right">Amount</th>
                   <th className="p-4">Receipt</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Actions</th>
@@ -480,12 +479,6 @@ export default function ClaimsPage() {
                     <td className="p-4 capitalize">{claim.paymentMethod?.name || 'N/A'}</td>
                     <td className="p-4 text-right font-semibold">
                       {claim.amount.toLocaleString(undefined, { style: 'currency', currency: claim.currency })}
-                    </td>
-                    <td className="p-4 text-right font-semibold text-slate-200">
-                      {claim.convertedAmount.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
-                      {claim.exchangeRate !== 1 && (
-                        <span className="block text-[9px] text-slate-500">Rate: {claim.exchangeRate}</span>
-                      )}
                     </td>
                     <td className="p-4">
                       {claim.receiptUrls && claim.receiptUrls.length > 0 ? (

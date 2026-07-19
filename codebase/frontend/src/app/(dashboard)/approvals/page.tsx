@@ -349,7 +349,7 @@ export default function ApprovalsPage() {
                         {item.expense?.gst && (
                           <div>
                             <span className="block text-slate-500 font-semibold uppercase tracking-wider text-[9px]">GST</span>
-                            <span className="text-slate-300 font-mono">${item.expense.gst}</span>
+                            <span className="text-slate-300 font-mono">{item.expense.gst.toLocaleString(undefined, { style: 'currency', currency: item.expense.currency })}</span>
                           </div>
                         )}
                         <div>
@@ -431,7 +431,7 @@ export default function ApprovalsPage() {
                         {/* Rules criteria */}
                         <div className="pt-2 text-xs flex gap-6 text-slate-300">
                           {wf.conditions.minAmount !== undefined && wf.conditions.minAmount !== null && (
-                            <span>Amount Limit: &gt;= ${wf.conditions.minAmount}</span>
+                            <span>Amount Limit: &gt;= {wf.conditions.minAmount.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}</span>
                           )}
                           {wf.conditions.category && (
                             <span>Category: {
