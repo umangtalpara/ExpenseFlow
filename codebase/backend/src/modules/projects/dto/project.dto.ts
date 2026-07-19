@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber, IsEnum, IsDateString, IsArray, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber, IsEnum, IsDateString, IsArray, Matches, IsBoolean } from 'class-validator';
 import { ProjectStatus } from '../schemas/project.schema';
 
 export class CreateProjectDto {
@@ -38,6 +38,10 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   approvalFlow?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  bypassBudgetLimit?: boolean;
 }
 
 export class UpdateProjectDto {
@@ -77,6 +81,10 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   approvalFlow?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  bypassBudgetLimit?: boolean;
 }
 
 export class AssignMembersDto {

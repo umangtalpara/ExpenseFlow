@@ -41,12 +41,14 @@
 
 ### Backend Agent
 ```
+[2026-07-19 14:30:00] Status: COMPLETE — Added bypassBudgetLimit DTO field and validation override logic in ProjectsService.
 [2026-07-02 10:45:00] Status: COMPLETE — Completed PHASE-10-TASK-001 and TASK-002 (In-App notifications service, native TOTP 2FA engine, active session tracking & revoke).
 [2026-07-02 10:20:00] Status: IDLE — Completed PHASE-09-TASK-001 and TASK-002 (Reports filter & CSV export and Analytics aggregations).
 ```
 
 ### Frontend Agent
 ```
+[2026-07-19 14:30:00] Status: COMPLETE — Integrated active budgets store, warning prompt checks on project create/edit, and organization budget edit modal.
 [2026-07-02 10:48:00] Status: COMPLETE — Completed PHASE-10-TASK-001 and TASK-002 (Security Settings 2FA QR code & verify, session revocation tables, header notification bell, page loaders, and frontend env baseURL).
 [2026-07-02 10:21:00] Status: IDLE — Completed PHASE-09-TASK-003 (Interactive Custom SVG Dashboard and Reports & Exports UI).
 ```
@@ -64,4 +66,4 @@ No activity yet
 
 ---
 
-*Last updated: 2026-07-02 — Phase 10 completed*
+*Last updated: 2026-07-19 — Organization budget editing and project bypass warning implemented*

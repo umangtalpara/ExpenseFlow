@@ -10,6 +10,7 @@
 |----|------|----------|-----------|--------|
 | ADR-001 | 2026-06-30 | Local Native Database and Cache Services (No Docker) | Docker daemon is not running on the system; native services are preferred. | Accepted |
 | ADR-002 | 2026-07-02 | Global Tenant-Isolated Mongoose Audit Logging & Context Wrapping | Mongoose post-save hooks trigger on subdocs, and tenant-isolation plugin requires context. Wrap logs in runWithTenant. | Accepted |
+| ADR-003 | 2026-07-19 | Project Budget Ceiling Bypass Warning & Override | Allow project creation and update to bypass organization budget ceilings via user-confirmed frontend warning prompt. | Accepted |
 
 ---
 
@@ -74,3 +75,31 @@ To support Phase 8 compliance audit logging, we implemented a global mongoose pl
 - **Positive**: Robust, error-free audit trails; zero leaks of audit records across tenants; simplified services and test files.
 - **Negative**: Adds minor execution overhead from `Promise` wrapping in `AuditLogsService.log`.
 - **Neutral**: Context is correctly bound to `AsyncLocalStorage` during lifecycle hooks.
+
+---
+
+### ADR-003: Project Budget Ceiling Bypass Warning & Override
+
+**Date**: 2026-07-19  
+**Status**: Accepted  
+**Decider**: Antigravity  
+**Phase**: Post-Phase 10 Enhancement  
+
+#### Context
+
+By default, the multi-tenant expense tracker restricted project budget allocations to remain strictly under the active organization budget ceiling (exhibiting hard-blocking logic in `ProjectsService`). However, business rules require flexibility: admins need to allocate budgets that exceed ceilings when necessary, after confirming their intent.
+
+#### Decision
+
+1. **Backend Optional Override**: Introduced a boolean flag (`bypassBudgetLimit`) in `CreateProjectDto` and `UpdateProjectDto`. If set to `true`, `ProjectsService` will bypass both missing-budget exceptions and budget-cap-exceeded exceptions.
+2. **Frontend Confirmation Modal**: Added client-side validation that calculates whether the project budget exceeds remaining organization budget allocation. If a breach is detected, a custom confirmation dialog prompts the user ("Budget Limit Warning"). Upon clicking "Proceed anyway", the request is sent with `bypassBudgetLimit: true`.
+
+#### Alternatives Considered
+
+1. **Throwing soft warnings in API response**: NestJS endpoints typically return HTTP status codes, and returning soft warnings in a 200/201 response would violate API standards.
+2. **Disabling organization limits completely**: Rejected because organization ceilings prevent accidental over-allocation and are still required as warnings.
+
+#### Consequences
+
+- **Positive**: Restores administrative flexibility; retains validation warning guardrails; preserves API design patterns.
+- **Negative**: Allows project budgets to exceed organization caps if explicitly bypassed, requiring admins to monitor their actual budget allocations carefully.

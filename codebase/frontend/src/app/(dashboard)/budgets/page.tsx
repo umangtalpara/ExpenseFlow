@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgStore } from '@/store/org.store';
-import { Landmark, AlertTriangle, Coins, RefreshCw, X, PlusCircle, Check, Play } from 'lucide-react';
+import { Landmark, AlertTriangle, Coins, RefreshCw, X, PlusCircle, Check, Play, Edit } from 'lucide-react';
 
 interface ProjectOption {
   _id: string;
@@ -53,6 +53,24 @@ export default function BudgetsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [spentModalOpen, setSpentModalOpen] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<BudgetCardItem | null>(null);
+
+  // Edit Org Budget Modal State
+  const [editOrgModalOpen, setEditOrgModalOpen] = useState(false);
+  const [editOrgSubmitting, setEditOrgSubmitting] = useState(false);
+  const [editOrgForm, setEditOrgForm] = useState({
+    amount: 0,
+    startDate: '',
+    endDate: '',
+  });
+
+  const openEditOrgModal = (budget: BudgetCardItem) => {
+    setEditOrgForm({
+      amount: budget.amount,
+      startDate: budget.startDate ? budget.startDate.split('T')[0] : '',
+      endDate: budget.endDate ? budget.endDate.split('T')[0] : '',
+    });
+    setEditOrgModalOpen(true);
+  };
 
   // Forms
   const [createForm, setCreateForm] = useState({
@@ -164,6 +182,31 @@ export default function BudgetsPage() {
     }
   };
 
+  const handleEditOrgSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgBudget || !isAdmin) return;
+
+    setEditOrgSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await api.put(`/budgets/${orgBudget._id}`, {
+        amount: Number(editOrgForm.amount),
+        startDate: new Date(editOrgForm.startDate).toISOString(),
+        endDate: new Date(editOrgForm.endDate).toISOString(),
+      });
+
+      setSuccess('Organization budget updated successfully');
+      setEditOrgModalOpen(false);
+      loadData();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update organization budget');
+    } finally {
+      setEditOrgSubmitting(false);
+    }
+  };
+
   const orgBudget = budgets.find((b) => b.scope === 'organization' && b.status === 'active');
   const projectBudgets = budgets.filter((b) => b.scope === 'project');
 
@@ -226,8 +269,19 @@ export default function BudgetsPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="rounded-xl border border-white/5 bg-[#0b0f19]/60 p-5 space-y-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Company Budget Cap</span>
+        <div className="rounded-xl border border-white/5 bg-[#0b0f19]/60 p-5 space-y-2 relative group">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Company Budget Cap</span>
+            {isAdmin && orgBudget && (
+              <button
+                onClick={() => openEditOrgModal(orgBudget)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-white/5 transition-colors"
+                title="Edit Organization Budget"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
           <p className="text-2xl font-extrabold text-white">
             {totalOrgBudgetAmount.toLocaleString(undefined, { style: 'currency', currency: orgBudget?.currency || orgCurrency || 'USD' })}
           </p>
@@ -545,6 +599,78 @@ export default function BudgetsPage() {
                   className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
                 >
                   {simSubmitting ? 'Updating...' : 'Update Spent'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Organization Budget Modal */}
+      {editOrgModalOpen && orgBudget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditOrgModalOpen(false)} />
+          <div className="relative w-full max-w-md rounded-xl border border-white/5 bg-[#0b0f19] p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-white">Edit Organization Budget</h3>
+                <p className="text-xs text-slate-500">Update company-wide budget cap and dates</p>
+              </div>
+              <button onClick={() => setEditOrgModalOpen(false)} className="text-slate-500 hover:text-slate-300">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditOrgSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Cap Amount ({orgBudget.currency})</label>
+                <input
+                  type="number"
+                  value={editOrgForm.amount}
+                  onChange={(e) => setEditOrgForm({ ...editOrgForm, amount: Number(e.target.value) })}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Start Date</label>
+                  <input
+                    type="date"
+                    value={editOrgForm.startDate}
+                    onChange={(e) => setEditOrgForm({ ...editOrgForm, startDate: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">End Date</label>
+                  <input
+                    type="date"
+                    value={editOrgForm.endDate}
+                    onChange={(e) => setEditOrgForm({ ...editOrgForm, endDate: e.target.value })}
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setEditOrgModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editOrgSubmitting}
+                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                >
+                  {editOrgSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

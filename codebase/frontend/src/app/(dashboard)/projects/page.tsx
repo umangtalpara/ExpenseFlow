@@ -42,6 +42,12 @@ export default function ProjectsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [workflows, setWorkflows] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+
+  // Budget validation alerts
+  const [budgetWarningOpen, setBudgetWarningOpen] = useState(false);
+  const [budgetWarningMsg, setBudgetWarningMsg] = useState('');
+  const [onConfirmBudgetWarning, setOnConfirmBudgetWarning] = useState<(() => void) | null>(null);
 
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -111,9 +117,105 @@ export default function ProjectsPage() {
     setEditModalOpen(true);
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
+  const checkBudgetLimit = (budgetAmount: number, startDateStr: string, endDateStr: string) => {
+    const start = startDateStr ? new Date(startDateStr) : new Date();
+    const end = endDateStr ? new Date(endDateStr) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+    const orgBudget = budgets.find(
+      (b) =>
+        b.scope === 'organization' &&
+        b.status === 'active' &&
+        new Date(b.startDate) <= start &&
+        new Date(b.endDate) >= end
+    );
+
+    if (!orgBudget) {
+      return {
+        warning: true,
+        message: 'There is no active organization budget covering this project period. Creating this project will bypass the check.',
+      };
+    }
+
+    // Sum other project budgets in this period
+    const existingProjectBudgets = budgets.filter(
+      (b) =>
+        b.scope === 'project' &&
+        b.status === 'active' &&
+        new Date(b.startDate) >= new Date(orgBudget.startDate) &&
+        new Date(b.endDate) <= new Date(orgBudget.endDate)
+    );
+
+    const currentAllocated = existingProjectBudgets.reduce((sum, b) => sum + b.amount, 0);
+
+    if (currentAllocated + budgetAmount > orgBudget.amount) {
+      return {
+        warning: true,
+        message: `Project budget allocation exceeds organization budget ceiling. Available remaining: ${(orgBudget.amount - currentAllocated).toLocaleString()} ${orgBudget.currency}. Requested: ${budgetAmount.toLocaleString()} ${orgBudget.currency}.`,
+      };
+    }
+
+    return { warning: false };
+  };
+
+  const checkBudgetLimitForEdit = (projectId: string, budgetAmount: number, startDateStr: string, endDateStr: string) => {
+    const start = startDateStr ? new Date(startDateStr) : new Date();
+    const end = endDateStr ? new Date(endDateStr) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+    const orgBudget = budgets.find(
+      (b) =>
+        b.scope === 'organization' &&
+        b.status === 'active' &&
+        new Date(b.startDate) <= start &&
+        new Date(b.endDate) >= end
+    );
+
+    if (!orgBudget) {
+      return {
+        warning: true,
+        message: 'There is no active organization budget covering this project period. Updating this project will bypass the check.',
+      };
+    }
+
+    // Sum other project budgets in this period (excluding this project's budget)
+    const existingProjectBudgets = budgets.filter(
+      (b) =>
+        b.scope === 'project' &&
+        b.status === 'active' &&
+        b.project !== projectId &&
+        new Date(b.startDate) >= new Date(orgBudget.startDate) &&
+        new Date(b.endDate) <= new Date(orgBudget.endDate)
+    );
+
+    const currentAllocated = existingProjectBudgets.reduce((sum, b) => sum + b.amount, 0);
+
+    if (currentAllocated + budgetAmount > orgBudget.amount) {
+      return {
+        warning: true,
+        message: `Project budget allocation exceeds organization budget ceiling. Available remaining: ${(orgBudget.amount - currentAllocated).toLocaleString()} ${orgBudget.currency}. Requested: ${budgetAmount.toLocaleString()} ${orgBudget.currency}.`,
+      };
+    }
+
+    return { warning: false };
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent, forceBypass = false) => {
     e.preventDefault();
     if (!selectedProject || !isAdmin) return;
+
+    if (!forceBypass) {
+      const check = checkBudgetLimitForEdit(
+        selectedProject._id,
+        Number(editForm.budget),
+        editForm.startDate,
+        editForm.endDate
+      );
+      if (check.warning) {
+        setBudgetWarningMsg(check.message || '');
+        setOnConfirmBudgetWarning(() => () => handleEditSubmit(e, true));
+        setBudgetWarningOpen(true);
+        return;
+      }
+    }
 
     setCreateSubmitting(true);
     setError('');
@@ -129,6 +231,7 @@ export default function ProjectsPage() {
         endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : undefined,
         status: editForm.status,
         approvalFlow: editForm.approvalFlow || null,
+        bypassBudgetLimit: forceBypass,
       });
 
       setSuccess('Project updated successfully');
@@ -156,6 +259,7 @@ export default function ProjectsPage() {
         api.get(endpoint),
         api.get('/budgets'),
       ]);
+      setBudgets(budgetsResponse.data);
       const matchedData = projectsResponse.data.map((proj: any) => {
         const budgetDoc = budgetsResponse.data.find(
           (b: any) => b.scope === 'project' && b.project === proj._id && b.status === 'active'
@@ -252,9 +356,23 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent, forceBypass = false) => {
     e.preventDefault();
     if (!isAdmin) return;
+
+    if (!forceBypass) {
+      const check = checkBudgetLimit(
+        Number(createForm.budget),
+        createForm.startDate,
+        createForm.endDate
+      );
+      if (check.warning) {
+        setBudgetWarningMsg(check.message || '');
+        setOnConfirmBudgetWarning(() => () => handleCreateSubmit(e, true));
+        setBudgetWarningOpen(true);
+        return;
+      }
+    }
 
     setCreateSubmitting(true);
     setError('');
@@ -267,6 +385,7 @@ export default function ProjectsPage() {
         startDate: createForm.startDate ? new Date(createForm.startDate).toISOString() : undefined,
         endDate: createForm.endDate ? new Date(createForm.endDate).toISOString() : undefined,
         approvalFlow: createForm.approvalFlow || undefined,
+        bypassBudgetLimit: forceBypass,
       });
 
       setSuccess('Project created successfully');
@@ -283,6 +402,7 @@ export default function ProjectsPage() {
         status: 'active',
         approvalFlow: '',
       });
+      loadProjects();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create project');
     } finally {
@@ -998,6 +1118,47 @@ export default function ProjectsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Budget Warning Confirmation Modal */}
+      {budgetWarningOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setBudgetWarningOpen(false)} />
+          <div className="relative w-full max-w-md rounded-xl border border-amber-500/20 bg-[#0b0f19] p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-3 text-amber-400">
+              <AlertTriangle className="h-6 w-6 shrink-0" />
+              <h3 className="text-lg font-bold text-white font-sans">Budget Limit Warning</h3>
+            </div>
+            
+            <p className="text-sm text-slate-300 leading-relaxed font-sans">
+              {budgetWarningMsg}
+            </p>
+            
+            <p className="text-xs text-slate-500 font-sans">
+              Creating or updating this project will exceed the designated organization caps. Do you approve and wish to proceed anyway?
+            </p>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setBudgetWarningOpen(false)}
+                className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-200 text-sm font-semibold transition-colors font-sans"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBudgetWarningOpen(false);
+                  if (onConfirmBudgetWarning) onConfirmBudgetWarning();
+                }}
+                className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold transition-colors text-sm font-sans"
+              >
+                Proceed anyway
+              </button>
+            </div>
           </div>
         </div>
       )}

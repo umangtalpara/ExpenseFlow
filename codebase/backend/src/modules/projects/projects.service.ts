@@ -55,28 +55,32 @@ export class ProjectsService {
     }).exec();
 
     if (!orgBudget) {
-      throw new BadRequestException(
-        'No active organization budget covers this project period. Set up an organization budget first.'
-      );
-    }
+      if (!dto.bypassBudgetLimit) {
+        throw new BadRequestException(
+          'No active organization budget covers this project period. Set up an organization budget first.'
+        );
+      }
+    } else {
+      // Sum other project budgets in this period
+      const existingProjectBudgets = await BudgetModel.find({
+        scope: 'project',
+        status: 'active',
+        organization: new Types.ObjectId(tenantId),
+        startDate: { $gte: orgBudget.startDate },
+        endDate: { $lte: orgBudget.endDate },
+      }).exec();
 
-    // Sum other project budgets in this period
-    const existingProjectBudgets = await BudgetModel.find({
-      scope: 'project',
-      status: 'active',
-      organization: new Types.ObjectId(tenantId),
-      startDate: { $gte: orgBudget.startDate },
-      endDate: { $lte: orgBudget.endDate },
-    }).exec();
+      const currentAllocated = existingProjectBudgets.reduce((sum, b: any) => sum + b.amount, 0);
 
-    const currentAllocated = existingProjectBudgets.reduce((sum, b: any) => sum + b.amount, 0);
-
-    if (currentAllocated + dto.budget > orgBudget.amount) {
-      throw new BadRequestException(
-        `Project budget allocation exceeds organization budget ceiling. ` +
-        `Available remaining: ${orgBudget.amount - currentAllocated} ${orgBudget.currency}. ` +
-        `Requested: ${dto.budget} ${projectCurrency}.`
-      );
+      if (currentAllocated + dto.budget > orgBudget.amount) {
+        if (!dto.bypassBudgetLimit) {
+          throw new BadRequestException(
+            `Project budget allocation exceeds organization budget ceiling. ` +
+            `Available remaining: ${orgBudget.amount - currentAllocated} ${orgBudget.currency}. ` +
+            `Requested: ${dto.budget} ${projectCurrency}.`
+          );
+        }
+      }
     }
 
     if (dto.approvalFlow) {
@@ -243,9 +247,11 @@ export class ProjectsService {
 
           const allocated = otherBudgets.reduce((sum, b: any) => sum + b.amount, 0);
           if (allocated + dto.budget > orgBudget.amount) {
-            throw new BadRequestException(
-              `Updating budget exceeds organization limit. Max available: ${orgBudget.amount - allocated}`
-            );
+            if (!dto.bypassBudgetLimit) {
+              throw new BadRequestException(
+                `Updating budget exceeds organization limit. Max available: ${orgBudget.amount - allocated}`
+              );
+            }
           }
         }
         await BudgetModel.findByIdAndUpdate(budgetDoc._id, { amount: dto.budget }).exec();
