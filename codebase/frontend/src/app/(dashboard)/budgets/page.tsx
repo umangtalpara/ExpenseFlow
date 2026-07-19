@@ -137,7 +137,7 @@ export default function BudgetsPage() {
         scope: createForm.scope,
         project: createForm.scope === 'project' ? createForm.project : undefined,
         amount: Number(createForm.amount),
-        currency: createForm.currency,
+        currency: orgCurrency || 'USD',
         startDate: new Date(createForm.startDate).toISOString(),
         endDate: new Date(createForm.endDate).toISOString(),
         thresholds: threshArray.length > 0 ? threshArray : [80, 100],
@@ -286,7 +286,7 @@ export default function BudgetsPage() {
             )}
           </div>
           <p className="text-2xl font-extrabold text-white">
-            {totalOrgBudgetAmount.toLocaleString(undefined, { style: 'currency', currency: orgBudget?.currency || orgCurrency || 'USD' })}
+            {totalOrgBudgetAmount.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
           </p>
           <p className="text-[10px] text-slate-500">
             {orgBudget ? `Period: ${new Date(orgBudget.startDate).toLocaleDateString()} - ${new Date(orgBudget.endDate).toLocaleDateString()}` : 'No active Org Budget'}
@@ -366,7 +366,7 @@ export default function BudgetsPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-slate-400">
-                            Spent: <span className="font-semibold text-slate-200">{pb.spent.toLocaleString()}</span> / {pb.amount.toLocaleString()} {pb.currency}
+                            Spent: <span className="font-semibold text-slate-200">{pb.spent.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}</span> / {pb.amount.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
                           </p>
                           <p className="text-[10px] text-slate-500">{percentage.toFixed(1)}% Used</p>
                         </div>
@@ -422,7 +422,7 @@ export default function BudgetsPage() {
                       <div key={ob._id} className="p-4 rounded-lg border border-white/5 bg-white/5 hover:border-white/10 transition-all duration-200 flex justify-between items-center">
                         <div className="space-y-1">
                           <p className="text-sm font-semibold text-white">
-                            {ob.amount.toLocaleString(undefined, { style: 'currency', currency: ob.currency })}
+                            {ob.amount.toLocaleString(undefined, { style: 'currency', currency: orgCurrency || 'USD' })}
                           </p>
                           <p className="text-xs text-slate-500">
                             Period: {new Date(ob.startDate).toLocaleDateString()} - {new Date(ob.endDate).toLocaleDateString()}
@@ -556,18 +556,6 @@ export default function BudgetsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Currency</label>
-                  <select
-                    value={createForm.currency}
-                    onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0c1020] px-4 py-2.5 text-sm text-white focus:border-cyan-500 opacity-70"
-                    disabled
-                  >
-                    <option value={orgCurrency || 'USD'}>{orgCurrency || 'USD'}</option>
-                  </select>
-                </div>
-
-                <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Start Date</label>
                   <input
                     type="date"
@@ -694,7 +682,7 @@ export default function BudgetsPage() {
 
             <form onSubmit={handleEditOrgSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Amount ({selectedBudget.currency})</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Total Amount ({orgCurrency || 'USD'})</label>
                 <input
                   type="number"
                   value={editOrgForm.amount}
