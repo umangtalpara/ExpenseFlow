@@ -21,7 +21,7 @@ api.interceptors.request.use(
   }
 );
 
-// Automatically handle 401 Unauthorized responses
+// Automatically handle 401 Unauthorized responses and show other error popups
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -39,6 +39,25 @@ api.interceptors.response.use(
           window.location.href = '/login';
         }
       }
+    } else if (error.response) {
+      const status = error.response.status;
+      const data = error.response.data;
+      let msg = 'An unexpected error occurred. Please try again.';
+      if (data) {
+        if (Array.isArray(data.message)) {
+          msg = data.message.join('\n');
+        } else if (typeof data.message === 'string') {
+          msg = data.message;
+        } else if (typeof data.error === 'string') {
+          msg = data.error;
+        }
+      }
+      
+      const { useErrorStore } = require('@/store/error.store');
+      useErrorStore.getState().showError(msg, `Action Failed (${status})`);
+    } else {
+      const { useErrorStore } = require('@/store/error.store');
+      useErrorStore.getState().showError(error.message || 'Unable to connect to server.', 'Network Connection Error');
     }
     return Promise.reject(error);
   }

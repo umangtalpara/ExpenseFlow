@@ -750,8 +750,9 @@ export default function ProjectsPage() {
                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {createSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {createSubmitting ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
@@ -843,8 +844,9 @@ export default function ProjectsPage() {
                 <button
                   type="submit"
                   disabled={membersSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {membersSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {membersSubmitting ? 'Saving...' : 'Save Assignments'}
                 </button>
               </div>
@@ -979,8 +981,9 @@ export default function ProjectsPage() {
                 <button
                   type="submit"
                   disabled={directExpenseSubmitting}
-                  className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {directExpenseSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {directExpenseSubmitting ? 'Logging...' : 'Log & Approve Expense'}
                 </button>
               </div>
@@ -1112,8 +1115,9 @@ export default function ProjectsPage() {
                 <button
                   type="submit"
                   disabled={createSubmitting}
-                  className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm"
+                  className="flex items-center justify-center px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold transition-colors text-sm disabled:opacity-50"
                 >
+                  {createSubmitting && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
                   {createSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
